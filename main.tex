@@ -1,0 +1,308 @@
+\documentclass[10pt, oneside]{article} 
+\usepackage{amsmath, amsthm, amssymb, calrsfs, wasysym, verbatim, bbm, color, graphics, geometry, gensymb}
+
+\geometry{tmargin=.75in, bmargin=.75in, lmargin=.75in, rmargin = .75in}  
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\norm}[1]{\left\lVert#1\right\rVert}
+\newcommand{\Cdot}{\boldsymbol{\cdot}}
+
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{conv}{Convention}
+\newtheorem{rem}{Remark}
+\newtheorem{lem}{Lemma}
+\newtheorem{cor}{Corollary}
+
+\usepackage[hidelinks]{hyperref}
+
+\title{CS 334}
+\author{Alexander Liu}
+\date{Fall 2024}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\vspace{.25in}
+
+\section{Intro}
+\subsection{Basics}
+\begin{itemize}
+    \item What is machine learning?
+    \begin{itemize}
+        \item In classical programming, we give the rules + data to get answers
+        \item In ML, we put in data and answers to get the rules
+        \item Many types \& applications: supervised learning (follow correct behavior), unsupervised learning (look for patterns in data), reinforcement learning (figure out how to achieve good outcomes)
+        \begin{itemize}
+            \item Mainly focus on supervised learning
+            \item A bit of unsupervised learning
+            \begin{itemize}
+                \item Clustering, collaborative filtering
+            \end{itemize}
+            \item A bit of Reinforcement Learning
+        \end{itemize}
+    \end{itemize}
+    \item We use NumPy, Pandas, Matplotlib, Pytorch, Scikit Learn
+\end{itemize}
+
+\subsection{Binary Classification}
+\begin{itemize}
+    \item Two possible outcomes
+    \begin{itemize}
+        \item Is this email a spam?
+        \item Is this review positive?
+        \item Is this digit a "9"?
+        \item Is this image a Chihuahua or a muffin?
+    \end{itemize}
+    \item Feature vector: $\{\vec{x}^{(1)}, y^{(1)}\}$, where $\vec{x}$ is a d-dimensional feature vector, and $y$ is a label
+    \begin{itemize}
+        \item Here, since we are using a binary classifier, our "label space" is $\{-1,+1\}$
+    \end{itemize}
+    \item Given training data containing a set of labeled examples, come up with a rule that maps an unable example to the correct label
+    \item \textbf{Objective:} Given $\{\vec{x}^{(1)}, y^{(1)}\}$, where $\vec{x}^N _{i=1}$ where $\vec{x}^{(1)}\in \R^d, y^{(i)}\in {-1,+1}$, find a ``good`` $h:\R^d \rightarrow \{-1,+1\}$
+
+\end{itemize}
+
+Make sure to label plots.
+We can and should look up documentation online
+Can use seaborn, matplotlib, pandas, numpy
+
+\subsection{Linear Classification}
+\begin{itemize}
+    \item feature vector $\vec{x} = [x_1,x_2,...,x_d]^T$ (transpose to indicate column vector), $\vec{x} \in \R^d$
+    \item label $y\in \{-1,+1\}$
+    \item training set of labeled training $D=\{\vec{x}^{(i)}, y^{(i)}\}^N _{i=1}$. In English, paired/zipped up feature vectors and labels
+    \item classifier: $h:\R^d \rightarrow \{-1, +1\}$. $h(\vec{x}) = h(x_1, x_2,...,x_d)$
+    \item Goal: select the best $h$ from a set of possible classifiers $\mathbb{H}$ that would have the best change of classifying new examples
+    \item Example
+    \begin{itemize}
+        \item Let $\vec{x} = [x_1, x_2, ..., x_{360}]^T, x_k \in \{1,...,2048\}$
+        \item Suppose a training set of $N=100, D= {\vec{x} ^(i) , y^{(i)}}\} ^{100} _ {i=1}$ where $x_3$ is different in every example.
+        \item Build a lookup table.
+        $h(\vec{x}) =$
+        \begin{itemize}
+            \item $y^{(i)}$ if $x_3 = x_3 ^{(i)}$
+            \item $-1$ otherwise
+        \end{itemize}
+        \item Is this a good classifier? NO. We just default to $-1$ if we don't have a match
+        \item We want Generalization. In other words, works well on unseen examples.
+        \item In this case, the classifier overfits (to the training data)
+        \item Problem: too many choices in $\mathbb{H}$. We need to constrain what $\mathbb{H}$ can be.
+        \item Solution here: constrain $\mathbb{H}$ to a linear classifier. However, this can't be too small (ex: if we only have 1 possible value, then we will just be inaccurate)
+        \item Important to find the right balance $\rightarrow$ model selection
+
+    \end{itemize}
+    \item Linear Classifiers (through the origin)
+    \begin{itemize}
+        \item Thresholded linear mapping from feature vectors to labels.
+        \item $h(\vec{x}; \vec{\theta}) = \{-1 \text{ if } \vec{\theta} \cdot \vec{x} \geq 1, +1 \textbf{ if } \vec{\theta}\cdot \vec{x} < 1\},\text{   } \vec{\theta} = [\theta_1,\theta_2, ..., \theta_d]^T$, where semicolon indicates input vs output
+        \item $\vec{\theta} \cdot \vec{x}$ is element-wise dot product
+        \item Different $\vec{\theta}$'s produce potentially different labeling for the same $\vec{x}$
+        \item $\vec{\theta}$ defines a hyperplane that goes through the origin, dividing the feature space into a positive side and a negative side
+        \begin{itemize}
+            \item We call the hyperplane ($\theta_2)$?) the ``decision boundary". It is orthogonal to the label vector $\theta$
+            \item What happens if a point is on the hyperplane?
+            \begin{itemize}
+                \item $\vec{\theta} \cdot \vec{x} = \norm{\vec{\theta}}\norm{\vec{x}}cos90\degree = 0$
+                \item $x_2 = - \frac{\theta_1}{\theta_2}x_1$, where $-\frac{\theta_1}{\theta_2}$ is the slope
+                \item Does length matter? No.
+                \item Does direction matter? Yes because it affects the angle
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+    \item How do we select $\vec{\theta}$?
+    \begin{itemize}
+        \item Intuition: find a $\vec{\theta}$ that works well on the training data.
+        \item Why is this ok now? Didn't we say overfit?
+        \item Now we've constrained $\mathbb{H}$ to linear, reducing the change of overfitting
+        \item Minimize Training Error
+        \begin{itemize}
+            \item Training Error: fraction of training examples for which the classifier predicts the wrong labels
+        \end{itemize}
+        \item $\varepsilon_N (\vec{\theta}) = \frac{1}{N} \sum_{i=1} ^N \mathbb{I} [y^{(i)} \neq h(\vec{x} ^{(i)} ; \vec{\theta})]$ \\$= \frac{1}{N} \sum_{i=1} ^N \mathbb{I}[y^{(i)} (\vec{\theta} \cdot \vec{x} ^{(i)}) \leq 0]$, where $\mathbb{I}[\cdot]$ returns $1$ if logical equation evaluates to true, $0$ otherwise
+    \end{itemize}
+\end{itemize}
+
+\subsection{Dot Product}
+\begin{itemize}
+    \item $\vec{\theta} \cdot \vec{x} = \norm{\vec{\theta}}\norm{\vec{x}} cos\alpha$, where $\alpha$ is the angle between the two vectors
+    \item Recall norm: $\norm{\vec{x}} = \sqrt{x_1^2 + x_2 ^2 + ... + x_d^2} \geq 0$
+\end{itemize}
+
+\subsection{Linear Classifier through the origin}
+\begin{itemize}
+    \item $h(\vec x; \vec \theta) = sign(\vec \theta \cdot \vec x)= $+1 if dot product > 0, 0 if dot product = 0, -1 if theta < 0.
+    \begin{itemize}
+        \item In binary case, we have to make 0 as +1 or -1
+    \end{itemize}
+    \item $\vec \theta$ faces positive side, where $\vec \theta \cdot \vec x = 0$ defines a hyperplane: decision boundary
+    \item Training Error: $\epsilon_N (\vec \theta) = \frac{1}{N}\sum_{i=1} ^N I[]$complete later
+\end{itemize}
+
+\subsection{Linear Classifier with offset}
+\begin{itemize}
+    \item $h(\vec x; \vec \theta, b) =sign(\vec \theta \cdot \vec x + b), \vec x \in \R^d, \vec \theta \in \R^d, b\in \R$
+    \item New decision boundary $\vec \theta \cdot \vec x + b= 0$ doesn't pass through the origin (when $b\neq 0$).
+    \item $\vec \theta \cdot \vec x + b = 0$ is ``parallel" to $\vec \theta \cdot \vec x+b=\vec \theta \cdot \vec x$ which is only possible when b=0
+    \item Signed distance between two decision boundaries: $\frac{-b}{||\vec\theta||}$ from $\vec \theta\cdot \vec x=0$. Why?
+    \begin{itemize}
+        \item Point from decision boundary 1: $\vec \theta \cdot \vec x^{(1)} 0$
+        \item Point from offset decision boundary 2: vector from $\vec x ^{(1)}$ to $\vec x^{(2)} \vec v = \vec x ^{(2)} - \vec x^{(1)}$ orthogonal projection
+        \item $proj_{\vec \theta} \vec v= (\frac{\vec v \cdot \vec \theta}{||\vec \theta||}) \frac{\vec \theta}{||\vec \theta||}$. Second part is unit vector, so we just want the first part (scalar)
+        \[
+        = \frac{\vec{v} \cdot \vec{\theta}}{||\vec{\theta}||}
+        = \frac{\left( \vec{x}^{(2)} - \vec{x}^{(1)} \right) \cdot \vec{\theta}}{||\vec{\theta}||}
+        = \frac{\vec{x}^{(2)} \cdot \vec{\theta} - \vec{x}^{(1)} \cdot \vec{\theta}}{||\vec{\theta}||}
+        = \frac{-b}{||\vec{\theta}||}
+        \]
+        \item b is negative above because for offset: $\vec \theta \cdot \vec x = -b$
+        \item Definition: $D=\{\vec x ^{(i)}, y^{(i)}\}_{i=1}^N$ are linearly separable through the irign if there exists$\vec \theta$ such that $y^{(i)} (\vec \theta \cdot \vec x^{(i)}) > 0, \forall i= 1\cdots N$. Basically can we find a theta that can separate all points
+        \item \textbf{Perceptron Algorithm}
+        \begin{itemize}
+            \item Mistake-driven: starts with $\vec \theta = \vec 0$ (zero vector) and $k=0$, tries to update $\vec \theta$ to correct any mistakes. At first, all points are misclassified
+            \item While not all points are not correctly classified. Loop through all points. $y$ is the label, $x$ is the feature vector
+            \begin{itemize}
+                \item If $y^{(i)}(\vec \theta \cdot \vec x^{(i)})\leq 0$ \textbf{(INCORRECT CLASSIFICATION)}, set $\vec \theta^{(k+1)} =\vec \theta^{(k)} + y^{(i)} \vec x^{(i)}$, $k$++
+                \item Inner boolean: only update i.f.f incorrect classification
+            \end{itemize}
+            \item The reason why we need multiple passes is because even on update we may ``undershoot" on an update for a current point, continuing to leave it misclassified
+            \item Suppose we make a mistake on $\vec x^{(i)}$ and update $y^{(i)} (\vec \theta ^{(k)} \cdot \vec x ^{(i)})\leq 0$. Suppose we still misclassify after update: $y^{(i)} (\vec \theta ^{(k+1)} \cdot \vec x^{(i)} )\leq 0$, where $\vec \theta ^{(k+1)} = \vec \theta ^{(k)} + y^{(i)}\vec x^{(i)}$. We need to iterate again
+            \begin{thm} {Convergence of perception:the perception algorithm converges after a finite number of mistakes if the training examples are linearly separable (through the origin)}\end{thm}
+            \item We don't really use this algorithm because if it's not linearly separable, it runs on forever. The output may not even be good (only does the minimum to make sure it fits the training data). However, it is the building block for a lot of other concepts
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Perception}
+
+Perceptron algorithm was proposed in 1958
+\begin{itemize}
+    \item Mark 1 Perceptron: was meant to be a machine
+\end{itemize}
+
+Perceptron with offset
+\begin{itemize}
+    \item $k=0, \vec \theta^{(0)} = \vec 0, b^{(0)} = 0$
+    \item while not all points are correctly classified
+    \item if $y^{(0)} (\vec \theta ^{(k)} \cdot \vec x^{(k)} + b)\leq0$
+    \begin{itemize}
+        \item $\vec \theta^{(k+1)} = \vec \theta^{(k)} + y^{(i)} \vec x^{(i)}$
+        \item $b^{(k+1)}= b^{(k)} + y^{(i)}$
+        \item $k = k+1$
+    \end{itemize}
+\end{itemize}
+\textbf{Convergence Theorem}
+\begin{itemize}
+    \item If the training data set is linearly separable, the perception is guaranteed to converge after a finite number of updates
+    \item However
+    \begin{itemize}
+        \item No guarantee on uniqueness of solutions
+        \item ``finite number" of updates doesn't fit a specific constraint. Can be large
+        \begin{itemize}
+            \item ``undershoot" when current point remains misclassified after update
+            \item Previously correct data point may become misclassified after update
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+The Perceptron failed on the convergence and need to have a perfect decision boundary (linearly separable)
+\begin{itemize}
+    \item The ``famous XOR problem"
+    \item The perception algorithm would run indefinitely and never converge (remember it's not guaranteed to find a solution that minimizes training error)
+\end{itemize}
+Training Error
+\begin{itemize}
+    \item $\epsilon_N(\vec \theta) = \frac{1}{N} \sum_{i=1} ^n I[y^{(i)} (\vec \theta \cdot \vec x ^{(i)}) \leq 0]$
+\end{itemize}
+\subsection{Empirical Risk and Zero-One Loss Problems}
+Empirical Risk
+\begin{itemize}
+    \item $R_N (\vec \theta) = \frac{1}{N} \sum_{i=1} ^N loss(y^{(i)}(\vec \theta \cdot \vec x ^{(i)}))$
+    \item Divide by N to get average of sum of loss function
+    \item Previously, we were looking at the ``zero-one loss"
+    \begin{itemize}
+        \item Let $z=y(\vec \theta \cdot \vec x)$
+        \item $loss_{0-1} (z) = I(z\leq 0)= $ $ \begin{cases} 
+          1 & \text{if } z \leq 0 \\
+         0 & \text{otherwise} \\
+        \end{cases}$
+        \item Binary piecewise function
+        \item Problems (direct min is difficult for 0-1 loss)
+        \begin{itemize}
+            \item Not continuous at $z=0$
+            \item Not differentiable at $z=0$
+            \item not convex (concave-up (U, bowl-shape), no second-order derivative)
+        \end{itemize}
+        \item Another problem: we don't penalize mistakes based on their distance from the decision boundary. They are all treated equally: ``A mistake is a mistake"
+    \end{itemize}
+\end{itemize}
+
+\textbf{How do we approach data that is not linearly separable?}
+\subsection{Necessary Conditions for Gradient Descent}
+\begin{itemize}
+    \item Continuous
+    \item Differentiable
+    \item Convex (we have at least one local/global minimum)
+\end{itemize}
+
+\subsection{Hinge Loss}
+\begin{itemize}
+    \item Designed to penalize misclassifications the further away they are from our decision boundary
+    \item $loss_h (z) = max\{0,1-z\}$
+    \begin{itemize}
+        \item Now, loss increases linearly as z decreases
+    \end{itemize}
+    \item $z=y(\vec \theta \cdot \vec x)$
+    \item $y(\vec \theta\cdot x)$
+    \begin{itemize}
+        \item sign: +/-
+        \item magnitude
+        \begin{itemize}
+            \item $|y(\vec \theta\cdot \vec x)|=|y||\vec\theta\cdot \vec x|= |\pm 1| |\vec \theta\cdot \vec x| = |\vec \theta\cdot \vec x|$ is proportional to the distance $\frac{|\vec \theta \cdot \vec x|}{||\vec \theta||}$
+        \end{itemize}
+    \end{itemize}
+    \item Since hinge loss is \textbf{continuous, differentiable, convex}, we have a simple algo. to minimize \textbf{``Gradient Descent"}
+\end{itemize}
+
+\subsection{Quick Calculus Review}
+\begin{itemize}
+    \item $y=f(\vec x)=f(x_1,x_2,\cdots,x_d)$
+    \item Partial derivative: $\frac{\partial f}{\partial x_j} : \R^d\rightarrow \R$, ``rate of change in one axis direction"
+    \item ``if differentiating with $x_j$, I'll treat the rest of x as constants"
+    \item Gradient: $\nabla_{\vec x} f(\vec x) = [\frac{\partial}{\partial x_1} f(\vec x), \frac{\partial}{\partial x_2} f(\vec x),\cdots, \frac{\partial}{\partial x_d} f(\vec x)]^T$
+    \begin{itemize}
+        \item $\nabla_{\vec x} f(\vec x) : \R^d \rightarrow \R^d$ is a vector-valued function
+        \item Gradient is a normal vector
+        \item \textbf{In which direction does f increase the fastest?} The gradient vector
+        \item Gradient descent
+        \begin{itemize}
+            \item Suppose we want to minimize $f(\vec \theta)$ with $\vec \theta$. We know gradient $\nabla_{\vec \theta} f(\vec \theta)$ points in the direction of the steepest increase.
+            \begin{itemize}
+                \item For gradient descent, we take small steps in opposite direction of gradient
+                \item $\vec \theta^{(0)} = \vec 0, k=0$ while not converged
+                \item |$\vec \theta^{(k+1)} = \vec \theta ^{(k)} - n_k \nabla_{\vec \theta} f(\vec \theta) |_{(\vec \theta = \vec \theta^{(k)})}$
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Terminology}
+\begin{itemize}
+    \item Features: Traits
+    \item Feature vector: a vector of features
+    \item Feature space: the set of all possible combinations of features (cartesian product)
+    \begin{itemize}
+        \item Ex: \{int between 0 and 120\} $\times$ \{student, employed, unemployed\}
+    \end{itemize}
+    \item Label: How we translate
+    \item Label space: Range of values our label can have
+    \item Labeled dataset: data with both a feature vector and label
+    \item Classes: categories of feature labels
+\end{itemize}
+
+\end{document}
