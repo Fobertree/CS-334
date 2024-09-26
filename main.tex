@@ -1,6 +1,8 @@
 \documentclass[10pt, oneside]{article} 
 \usepackage{amsmath, amsthm, amssymb, calrsfs, wasysym, verbatim, bbm, color, graphics, geometry, gensymb}
 
+\usepackage{graphicx}
+
 \geometry{tmargin=.75in, bmargin=.75in, lmargin=.75in, rmargin = .75in}  
 
 \newcommand{\R}{\mathbb{R}}
@@ -57,12 +59,12 @@
     \begin{itemize}
         \item Is this email a spam?
         \item Is this review positive?
-        \item Is this digit a "9"?
+        \item Is this digit a ``9"?
         \item Is this image a Chihuahua or a muffin?
     \end{itemize}
     \item Feature vector: $\{\vec{x}^{(1)}, y^{(1)}\}$, where $\vec{x}$ is a d-dimensional feature vector, and $y$ is a label
     \begin{itemize}
-        \item Here, since we are using a binary classifier, our "label space" is $\{-1,+1\}$
+        \item Here, since we are using a binary classifier, our ``label space" is $\{-1,+1\}$
     \end{itemize}
     \item Given training data containing a set of labeled examples, come up with a rule that maps an unable example to the correct label
     \item \textbf{Objective:} Given $\{\vec{x}^{(1)}, y^{(1)}\}$, where $\vec{x}^N _{i=1}$ where $\vec{x}^{(1)}\in \R^d, y^{(i)}\in {-1,+1}$, find a ``good`` $h:\R^d \rightarrow \{-1,+1\}$
@@ -179,6 +181,7 @@ Can use seaborn, matplotlib, pandas, numpy
     \end{itemize}
 \end{itemize}
 
+\section{Our First Linear Classifier: Perceptron}
 \subsection{Perception}
 
 Perceptron algorithm was proposed in 1958
@@ -186,7 +189,7 @@ Perceptron algorithm was proposed in 1958
     \item Mark 1 Perceptron: was meant to be a machine
 \end{itemize}
 
-Perceptron with offset
+Perceptron with offset (add b to represent y offset)
 \begin{itemize}
     \item $k=0, \vec \theta^{(0)} = \vec 0, b^{(0)} = 0$
     \item while not all points are correctly classified
@@ -199,7 +202,7 @@ Perceptron with offset
 \end{itemize}
 \textbf{Convergence Theorem}
 \begin{itemize}
-    \item If the training data set is linearly separable, the perception is guaranteed to converge after a finite number of updates
+    \item If the training data set is linearly separable, the perception is guaranteed to converge (find a valid decision boundary) after a finite number of updates
     \item However
     \begin{itemize}
         \item No guarantee on uniqueness of solutions
@@ -210,9 +213,10 @@ Perceptron with offset
         \end{itemize}
     \end{itemize}
 \end{itemize}
-The Perceptron failed on the convergence and need to have a perfect decision boundary (linearly separable)
+The Perceptron failed on the convergence and needs to have a \textbf{`PERFECT'
+(no wrong outputs in training data)} decision boundary (linearly separable)
 \begin{itemize}
-    \item The ``famous XOR problem"
+    \item The ``famous XOR problem" (Minsky and Papert, “Perceptrons”, 1969.): a perfect decision boundary does not exist
     \item The perception algorithm would run indefinitely and never converge (remember it's not guaranteed to find a solution that minimizes training error)
 \end{itemize}
 Training Error
@@ -232,13 +236,16 @@ Empirical Risk
          0 & \text{otherwise} \\
         \end{cases}$
         \item Binary piecewise function
-        \item Problems (direct min is difficult for 0-1 loss)
+        \item \textbf{Problems (mainly continuity and horizontal line that doesn't maintain context well)}
         \begin{itemize}
             \item Not continuous at $z=0$
             \item Not differentiable at $z=0$
             \item not convex (concave-up (U, bowl-shape), no second-order derivative)
         \end{itemize}
         \item Another problem: we don't penalize mistakes based on their distance from the decision boundary. They are all treated equally: ``A mistake is a mistake"
+        \begin{itemize}
+            \item We can fix these problems with hinge-loss (looks like a horizontally flipped and shifted ReLU kinda)
+        \end{itemize}
     \end{itemize}
 \end{itemize}
 
@@ -268,6 +275,9 @@ Empirical Risk
     \end{itemize}
     \item Since hinge loss is \textbf{continuous, differentiable, convex}, we have a simple algo. to minimize \textbf{``Gradient Descent"}
 \end{itemize}
+\includegraphics[scale=0.9]{Images/hinge_loss.png}
+
+To clarify, empirical risk is NOT a loss function, it is taking the average of the output of a loss function. In other words, it is a function of the loss function
 
 \subsection{Quick Calculus Review}
 \begin{itemize}
@@ -291,6 +301,514 @@ Empirical Risk
     \end{itemize}
 \end{itemize}
 
+\subsection{Gradient Descent}
+Suppose we want to minimize some $f(\vec \theta): \R^d \rightarrow \R$ (some function e.g. empirical risk) with respect to $\vec \theta$. We know gradient $\nabla_{\vec\theta}f(\vec \theta)$ points in the direction of \textbf{steepest increase}.
+\begin{itemize}
+    \item Idea: take a small step in the \textbf{opposite direction}
+    \begin{itemize}
+        \item $\vec \theta ^{(0)} = \vec \theta, k=0$
+        \item While not converged
+        \begin{itemize}
+            \item $\vec \theta ^{(k+1)} = \vec \theta ^{(k)} - \eta_k \nabla_{\vec\theta} f(\vec \theta)|_{\vec\theta=\vec\theta^{(x)}}$
+            \item $\eta_k$: learning rate
+            \item $\vec\theta^{(x)}$: ``evaluated at" the current $\vec \theta$. Remember: the gradient is a vector-valued function
+        \end{itemize}
+        \item Questions:
+        \begin{itemize}
+            \item How do we know when the algorithm has converged?
+            \item How do we set the learning rate/step size?
+            \item What's the update rule?
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Update rule: need to calculate thee gradient.
+\begin{itemize}
+    \item $\nabla_{\vec \theta} R_N (\vec \theta)=[\frac{\partial R_N(\vec \theta)}{\partial\theta_1}, \frac{\partial R_N(\vec \theta)}{\partial\theta_2},\cdots, \frac{\partial R_N(\vec \theta)}{\partial\theta_d}]^T$
+    \item But recall:
+    \begin{itemize}
+        \item $R_N(\vec \theta)= \frac{1}{N} \sum_{i=1} ^N max\{0, 1-y^{(i)} \vec \theta\cdot \vec x ^{(i)}\}$. Summation $\rightarrow$ loop through entire dataset before update once $\rightarrow$ SLOW
+        \item Instead we can update $\vec \theta$ based on just one sample. Introducing Stochastic Gradient Descent, where we look at gradient with respect to each point
+    \end{itemize}
+\end{itemize}
+
+\subsection{Stochastic Gradient Descent}
+\begin{itemize}
+    \item $\vec \theta^{(0)} = \vec 0, k=0$
+    \item While convergence criteria not met
+    \begin{itemize}
+        \item Randomly shuffle points
+        \item for $i=1\cdots N$
+        \begin{itemize}
+            \item $\vec \theta^{(k+1)} = \vec \theta ^{(k)} - \eta_k \nabla_{\vec \theta} loss(y^{(i)} \vec \theta \cdot \vec x^{(i)})|_{\vec \theta = \vec \theta^{(k)}}$
+            \item k++
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Questions
+\begin{itemize}
+    \item Why shuffle?
+    \begin{itemize}
+        \item The shuffling helps converge better since without shuffling, we become too dependent on early samples in training data
+        \item Faster convergence
+        \item Unintended ordering in dataset
+    \end{itemize}
+    \item Find the update rule for SGD applied to hinge loss
+    \begin{itemize}
+        \item $\nabla_{\vec \theta} loss(y^{(i)} \vec \theta \cdot \vec x^{(i)})|_{\vec \theta = \vec \theta^{(k)}}$
+        \item if $y^{(i)}\vec \theta \cdot \vec x ^{(i)} > 1 : $ here loss $=0$, it's already the minimum. gradient is 0, no update.
+        \item if $y^(i) \vec \theta \cdot \vec x^{(i)} \leq 1$:
+        \begin{itemize}
+            \item $\nabla_{\vec \theta} loss(y^{(i)} \vec \theta \cdot \vec x^{(i)})|_{\vec \theta = \vec \theta^{(k)}}=\nabla_{\vec \theta} (1-y^{(i)} \vec \theta \cdot \vec x ^{(i)}$. Apply chain rule
+            \item $=0-y^{(i)} \nabla_{\vec \theta} (\vec \theta \cdot \vec x^{(i)})$. $\nabla_{\vec \theta} (\vec \theta \cdot \vec x) = \vec x$. Partials of dot product with respect to theta just removes all the thetas.
+            \item $=-y^{(i)} \vec x^{(i)}$
+            \item Update rule is: $\vec \theta ^{(k+1)} = \vec \theta^{(k)} -\eta_k (-y^{(i)} \vec x^{(i)})=\vec \theta^{(k) + \eta_k y^{(i)} \vec x^{(i)}}$, which looks similar to perceptron
+        \end{itemize}
+    \end{itemize}
+    \item Convergence
+    \begin{itemize}
+        \item $lim_{k\rightarrow \infty} \varepsilon_N \text{(Training error \%)} (\vec \theta) \neq 0$ b.c. not necessarily linearly separable.
+        \item $lim_{k\rightarrow \infty} R_N (\vec \theta) \neq 0$
+        \item $R_N(\vec \theta)$ \text{(empirical risk)} should go to some minimum
+        \item Look at how $R_N(\vec \theta)$ e.g. less than small $\epsilon$
+        \item Look at how $\vec \theta$ changes e.g. $||\vec \theta^{(k+1)} -\vec \theta ^{(k)}||_2 < \varepsilon$ 
+        \item Stopping criteria: set max iterations.
+    \end{itemize}
+    \item Learning rate
+    \begin{itemize}
+        \item What if learning rate is too large: overshoot and never converge
+        \item learning rate is too small: slow
+        \item Hyperparameter that can (and should) be tuned
+        \item $\eta$ as function of k (iteration step). Examples:
+        \begin{itemize}
+            \item Good heuristic: $\eta_k=\frac{1}{(1+k)}$. Decay training rate as iterations increase
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Observations
+\begin{itemize}
+    \item A ``good" learning rate ensures convergence Robbins Manro conditions (RMSProp?): $\sum_{i=1} ^\infty \eta_k =\infty, \sum_{i=1} ^\infty \eta_k ^2 < \infty$
+    \item With appropriate learning rate $\eta$, if $R_N(\vec \theta)$ is convex, (S)GD will converge to the global minimum almost surely
+    \item (stochastic) gradient descent is a general algorithm that can be applied to non-convex functions as well, in which case it converges to a local minimum.
+    \item technically, $R_N(\vec \theta)$ with hinge loss is not everywhere differentiable since it is piecewise linear. What do we do? \textbf{TODO}    
+    \item If initialize $\vec \theta ^{(k)} = \vec 0,$ $\vec \theta ^{(k)}$ is always in the span of feature vectors and can express $\vec \theta^{(k)}$ as a linear combination. This is because we're adding a multiple of one of the feature vectors $\vec x^{(i)}$
+    \item $\vec \theta^{(k)} =\sum _{i=1} ^N \alpha_i \vec x^{(i)}$ for some $\alpha_1 \cdots \alpha_N$
+    \begin{itemize}
+        \item We can rewrite $h(\vec x;\vec \theta) = sign(\vec \theta \cdot \vec x)=sign((\sum_{i=1} ^N \alpha_i \vec x^{(i)}) \cdot x)$\\
+        $=sign(\sum_{i=1}^N \alpha_i (\vec x^{(i)} \cdot \vec x)$ \textbf{We do smth and get a dot product of feature vectors. }Cool. so what? (kernels)
+        \item Suppose $\vec x \in \R^d, \phi(\vec x)\in \R^p$ where $p > d$\\
+        Example $\vec x=[x_1, x_2]^T, \text{(feature space)} \phi (\vec x) = [1,x_1, x_2, x_1, x_2, x_1^2, x_2 ^2]^T$. Find a $\vec \theta $ that perfectly separates points in $\phi(\vec x)$ space.\\
+        Recall: eqn of circle: radius r, center (h,k)\\
+        $(x-h)^2 + (y-k)^2 =r^2$
+        \item If we plug in (h,k), we get a $\vec \theta$ of polynomial coefficients that can be combined with feature space $\phi(\vec x)$
+        \item Number of features squares time complexity quadratically, blowing things up quickly
+        \item Idea: our alternative classifier definition relies on $\phi(\vec x)\cdot \phi(\vec x)$. Can we calculate $\phi(\vec x) \cdot \phi(\vec x^\prime)$ without calculating $\phi(\vec x)$ and $\phi(\vec x^\prime)$?
+        \begin{itemize}
+            \item Yes!
+            \item $\phi(\vec u) \cdot \phi (\vec v) = (\vec u \cdot \vec v)^2$. Introducing the kernel function
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Kernel function}
+$K(\vec x, \vec x^\prime)=\phi(\vec x)\cdot \phi (\vec x^\prime)$
+\begin{itemize}
+    \item $K: \R^d \times \R^d \rightarrow \R$. Generalized dot product
+    \item Examples:
+    \begin{itemize}
+        \item Linear kernel: $K(\vec x^{(i)})$
+        \item Polynomial kernels, e.g. quadratic
+        \item RBF kernel $\rightarrow$ infinite-dimensional feature space
+    \end{itemize}
+\end{itemize}
+
+A non-kernelized model assigns weights to features
+A kernelized model assigns weights to examples (making things `sparser')
+
+How do we add a kernel (``kernelize") to SGD?
+\begin{itemize}
+    \item Replace $\vec \theta$ with $\alpha_1, \cdots \alpha_N =0$. Replace $\vec \theta^{(k)} \cdot \vec x ^{(i)}$ with $\sum_{j=1}^N \alpha_j ^{(k)} \vec x^{(j)} \cdot\vec x^{(i)}$
+    \item Update kernel space
+    \item $\theta = \alpha \cdot \vec x$. Instead of directly calculating the high-dimensional (d-dimensional, $\vec \theta \in \R^d$) theta vector, we only need to keep track of N numbers (total number of points?), where $d<N$. $\alpha_1 \cdots \alpha_N$
+    \item Update alpha via $\eta$ learning rate: $\alpha_i = \alpha_i + \zeta$
+\end{itemize}
+Kernelizing a linear classifier
+\begin{itemize}
+    \item $h(\vec x; \vec \theta) = \text{sign}(\vec \theta \cdot \phi(\vec x))$
+    \item $h(\vec x; \vec \theta)=\text{sign}(\sum_{i=1} ^N \alpha_i K(\vec x^{(i)}, \vec x))$
+\end{itemize}
+
+Each kernel has n associated feature mapping
+\begin{itemize}
+    \item A kernel function takes two feature vectors and returns their dot product
+    \begin{itemize}
+        \item Quadratic kernel: $K(\vec x, \vec x^\prime)=(\vec x\cdot \vec x^\prime + 1)^2$
+    \end{itemize}
+\end{itemize}
+
+\section{Regression}
+
+\begin{itemize}
+    \item Regression is completely different from Classification. We don't want the hyperplane (or whatever boundary) to separate data anymore
+    \item $y\in \R$
+    \item Given \textbf{training data} containing a set of \textbf{labeled examples}, come up with a \textbf{rule} that maps an \textbf{unlabeled example} to the \textbf{correct label}
+\end{itemize}
+
+\subsection{Linear Regression}
+\begin{itemize}
+    \item A linear regression function is a linear function of the feature vector:\\
+    $$f(\vec x;\vec \theta, b)=\vec \theta\cdot \vec x + b$$
+    \item Questions
+    \begin{itemize}
+        \item How do we measure ``error"?
+        \item What algorithms can we use to optimize this criterion
+    \end{itemize}
+    \item Objective: minimize empirical risk with squared error loss
+\end{itemize}
+Empirical Risk (proxy for training error)
+\begin{itemize}
+    \item $R_N(\vec \theta) = \underset{\vec \theta}{min} \frac{1}{N}\sum_{i=1}^N \frac{(y^{(i)} - \vec \theta \cdot \vec x^{(i)})^2}{2}$
+    \item Squared loss: $loss(z)=\frac{z^2}{2}, z=y-\vec \theta \cdot \vec x$ aka ``ordinary least squares"
+    \item Two solutions
+    \begin{itemize}
+        \item 1) Stochastic Gradient Descent
+        \item Closed-Form
+        \begin{itemize}
+            \item $\vec \theta^*=(X^TX)^{-1} X^T y = X^+y$ (pseudo-inverse (Moore-Penrose): $X^+$, also equal to $(X^T X)^+ X^T y$)
+        \end{itemize}
+    \end{itemize}
+    \item How do we deal with non-linear functions?
+    \begin{itemize}
+        \item We use non-linear explicit feature mappings
+        \item Example
+        \begin{itemize}
+            \item $\phi(x) = [1,x,x^2, x^3]$
+            \item $\vec \theta = [0.31, 7.99,\cdots]$
+        \end{itemize}
+        \item When do we introduce too many features?
+    \end{itemize}
+    \begin{itemize}
+        \item Squared loss is 
+        \begin{itemize}
+            \item Continuous
+            \item Differentiable
+            \item Convex
+        \end{itemize}
+        \item Squared loss intuition: permit small discrepancies but penalize large deviations (quadratic)
+    \end{itemize}
+    \item \textbf{GOAL}: minimize empirical risk with squared loss
+    \begin{itemize}
+        \item $R_N(\vec \theta) = \frac{1}{N} \sum_{i=1}^N \frac{(y^{(i)} - \vec \theta \cdot \vec x^{(i)})^2}{2}$. Let's do SGD!
+        \item update rule:\\
+        $$\vec \theta ^{(i+1)} = \vec \theta^{(k)} - \eta \nabla_{\vec \theta} loss(y^{(i)} - \vec \theta \cdot \vec x ^{(i)})|_{\vec \theta =\vec \theta^{(k)}}$$
+        \item $\nabla_{\vec \theta} \frac{(y^{(i)} - \vec \theta \cdot \vec x^{(i)})^2}{2}=(y^{(i)} - \vec \theta \cdot \vec x^{(i)})(-\vec x^{(i)})$, as $\nabla_{\vec \theta} \vec \theta \cdot \vec x = \vec x$
+        \item $\vec \theta ^{(k+1)} = \vec \theta ^{(k)} + \eta (y^{(i)} - \vec \theta ^{(k)} \cdot \vec x^{9I)})\vec x^{(i)}$
+    \end{itemize}
+\end{itemize}
+
+Closed-form solution
+\begin{itemize}
+    \item Since $R_N(\vec \theta)$ with squared loss is convex (one global minimum) and it is differentiable everywhere, we can can try to find the exact minimum point by solving analytically.  
+    From HW1:
+    \begin{itemize}
+        \item $R_N(\vec \theta) = \frac{1}{N}\sum_{i=1} ^N \frac{(y^{(i)} - \vec \theta \cdot \vec x^{(i)})^2}{2} = \frac{1}{N} \frac{1}{2} (x\vec \theta -y)^T (x\vec \theta -y)$\\
+        $\frac{1}{N}\frac{1}{2}(\vec \theta ^T x^T x\vec \theta - \vec \theta^T x^Ty -y^Tx\vec \theta +y^Ty)$
+        \begin{itemize}
+            \item $(X\vec \theta)^Ty = y^T(X\vec \theta)$, because $(X\vec\theta)$ are a dot product since their resulting dimension is commutative
+            \item $=\frac{1}{N}\frac{1}{2}(\vec \theta^T x^T X\vec \theta - 2\vec \theta^TX^Ty+y^Ty)$
+        \end{itemize}
+    \end{itemize}
+    \item Step 1: find gradient:
+    \begin{itemize}
+        \item Quadratic form: $\nabla_{\vec \theta} (\vec \theta^T A\vec \theta)=(A+A^T)\vec \theta$
+        \item $\nabla_{\vec \theta} (\vec \theta^T \vec v) = \nabla_{\vec \theta}(\vec v^T \vec \theta) = \vec v$
+    \end{itemize}
+    \item Step 2: set gradient to zero and solve
+    \begin{itemize}
+        \item $(x^TX)\vec \theta = x$
+        $\nabla_{\vec \theta} R_N (\vec \theta)|_{\vec \theta =\vec \theta =k?} = 0$
+    \end{itemize}
+\end{itemize}
+
+inverting matrix: O($d^3$). what if matrix is not invertible (too many features, redundant)
+\begin{itemize}
+    \item Product of two matrices has the rank of the minimum dimension of the initial matrices. If rank not equal to final dim, not invertible.
+    \item If not invertible, use the Monro-Penrose pseudo-inverse: scipy.linalg.pinv
+    \item Regularization
+\end{itemize}
+theta star: the set of global weights that represent the global minimum
+
+\textbf{TODO: FIX THESE NOTES}
+
+\section{Generalization}
+\begin{itemize}
+    \item Ultimately we want a model that works well on unseen data
+    \item But... we've been talking purely about minimizing empirical risk on training data
+    \item Underfitting v.s. Overfitting
+    \begin{itemize}
+        \item Underfitting
+        \begin{itemize}
+            \item AKA bias/approximation error
+            \item We don't have enough or the right parameters to model relationship (example: only having linear parameters for a parabolic curve)
+            \item Poor on training set
+            \item Poor on test set
+            \item What happens if we add more data points?
+            \begin{itemize}
+                \item Doesn't really help
+            \end{itemize}
+        \end{itemize}
+        \item Overfitting
+        \begin{itemize}
+            \item AKA variance/estimation error, because we `vary' a lot from the average
+            \item (Very) good on training set
+            \item Poor on test set
+            \item As $N \uparrow, \text{variance} \downarrow$. So, increasing data improves accuracy and minimizes overfitting
+        \end{itemize}
+        \item Bias-Variance Trade-off
+        \begin{itemize}
+            \item Models relationship between model complexity and error. High model complexity leads to lower training error. Overdoing model complexity leads to high Test error.
+            \item Low model complexity: High bias (underfit)
+            \item High model complexity: High variance (overfit)
+            \item We want something in the middle
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Regularization}
+\begin{itemize}
+    \item Regularization: a ``knob" for controlling model complexity
+    $$J(\vec \theta) = R_N(\vec \theta) + \lambda \Omega (\vec \theta)$$
+    \begin{itemize}
+        \item $\lambda \Omega (\vec \theta)$: Regularization term/penalty
+        \item $\lambda \geq 0$: regularization strength. Balances complexity of model vs how well we fit data
+    \end{itemize}
+    \item Common regularizers
+    \begin{itemize}
+        \item L2 (``Ridge")
+        \begin{itemize}
+            \item $\Omega(\vec \theta) = \frac{||\vec \theta||_2^2}{2} = \frac{1}{2}\sum_{j=1} ^d \theta _j ^2$ (remember 2-norm is Euclidean norm)
+        \end{itemize}
+        \item L1 (``LASSO")
+        \begin{itemize}
+            \item $\Omega(\vec \theta) = ||\vec \theta||_1 = \sum_{j=1}^d |\theta_j|$
+        \end{itemize}
+        \item Elastic net:
+        \begin{itemize}
+            \item $\Omega(\vec \theta) = \lambda_2 ||\vec \theta||_2 ^2 + \lambda_1 ||\vec \theta||_1$
+            \item Combines L1 and L2 regularization. Lambdas are scalar weights between regularizations
+        \end{itemize}
+    \end{itemize}
+    \item Effect of Regularization
+    \begin{itemize}
+        \item Minimize $$J(\vec \theta) = R_N(\vec \theta) + \lambda \Omega (\vec \theta)$$
+        \item When minimize $J(\vec \theta)$, we are minimizing $R_N(\vec \theta)$ but at the same time, but at the same time, minimize $\Omega(\vec \theta)$
+        $$\frac{||\vec \theta||^2}{2}\text{ is smallest when } \vec \theta = \vec 0$$
+        \begin{itemize}
+            \item Push parameters to small values
+            \item Resist setting 0's away form default of zero unless data strongly suggest otherwise
+            \item Why are small parameter values in $\vec \theta$ good
+            \begin{itemize}
+                \item We want to limit effect of small pertubations in input in input, on model output. In other words, a small change in a coefficient produces a small change in output
+                \item if $\theta_j = 0$, that feature is effectively unused
+            \end{itemize}
+            \item Occam's Razor (13th century)
+            \begin{itemize}
+                \item ``When you have two competing hypotheses, the simpler one is preferred"
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+    \item How does regularization affect our solutions for regression?
+    \begin{itemize}
+        \item Ridge Regression. (L2- regularized linear regression)\\
+        $$J(\vec \theta) = \sum_{i=1}^N \frac{(y^{(i)} - \vec \theta \cdot \vec x ^{(i)})^2}{2} + \lambda \frac{||\vec \theta||_2 ^2}{2}$$
+        \begin{itemize}
+            \item Gradient of squared L2-norms
+            \item $\nabla_{\vec \theta} (||\vec \theta||_2 ^2) = [\frac{\partial}{\partial \theta _1} ||\vec \theta ||_2 ^2 , \frac{\partial}{\partial \theta_2} ||\vec \theta||_2 ^2, \cdots,\frac{\partial}{\partial \theta_d} ||\vec \theta||_2 ^2]$
+            \item $||\vec \theta||_2 ^2 = \theta_1 ^2 + \theta_2 ^2 + \cdots + \theta_d ^2$
+            \item $\frac{\partial}{\partial \theta_1}(\theta_1 ^2 + \theta_2 ^2 + \cdots + \theta_d ^d) = 2\theta_1$
+            \item $\nabla_{\vec \theta} ||\vec \theta||_2 ^2 = [2\theta_1, 2\theta_2, \cdots, 2\theta_d] = 2 [\theta_1, \theta_2, \cdots, \theta_d] =2\vec \theta$
+            \item $||\vec \theta||_2 ^2 = \vec \theta ^T \vec \theta$
+            \item SGD:
+            \begin{itemize}
+                \item $\nabla_{\vec \theta} (\frac{y^{(i)} - \vec \theta \cdot \vec x ^{(i)})^2}{2} + \lambda \frac{||\vec \theta||^2}{2})$
+            \end{itemize}
+            \item Update rule:
+            \begin{itemize}
+                \item $\vec \theta ^{(k+1)} = \vec \theta^{(k)} - \eta_k [(y^{(i)} - \vec \theta \cdot \vec x^{(i)} )( -\vec x^{(i)}) + \lambda \vec \theta^{(k)}]$
+                \item $=(1-\eta_k \lambda) \vec \theta^{(k)} + \eta_k (y^{(i)} - \vec \theta \cdot \vec x ^{(i)}) \vec x^{(i)}$
+            \end{itemize}
+            \item Closed-form solution
+            \begin{itemize}
+                \item $J(\vec \theta) = \frac{1}{2} (X\vec \theta - y)^T (X\vec \theta - y) + \frac{\lambda}{2} \vec \theta ^T \vec \theta$
+                \item $\nabla_{\vec \theta} J(\vec \theta) = (x^T x) \vec \theta - x^T y + \lambda \vec \theta$
+                \item $=(x^T x + \lambda I_d ) \vec \theta -x^Ty$. If set gradient to zero. $\vec \theta^* = (x^T x + \lambda I_d )^{-1} x^T y$
+            \end{itemize}
+            \item Geometric Interpretation of Regularization
+            \begin{itemize}
+                \item $\underset{\vec \theta}{min} R_N (\vec \theta) + \lambda \Omega(\vec \theta) \Leftrightarrow \underset{\vec \theta}{min} R_N(\vec \theta)$ s.t. $\Omega(\vec \theta) \leq B$
+                \item We go as far down the gradient descent while still in the geometric boundary as set by B (must stay inside no matter what) 
+                \item `L1-penalty leads to a sparse solution where some $\theta_j = 0$'. If $\theta_j = 0$, then we don't need that parameter since we're not using it
+                \item B is a value/constant that helps set the boundary
+                \item In L1 regularization, we can envision square/hypercube
+                \item For L2 regularization, we can envision circle/hypersphere
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+Recall: Bias-Variance Trade-off
+\begin{itemize}
+    \item Too much complexity, high variance
+    \item Too little complexity, high bias
+    \item Total Error = Variance + Bias
+    \begin{itemize}
+        \item Think of bias as sort of where the data gravitates towards (a mean or mode)
+        \item Think of variance as dispersion
+    \end{itemize}
+    \item Underfitting: High bias, low variance. Bad at both training set and predicting
+    \item Overfitting: High variance, low bias. Very good on training set. Bad at predicting
+\end{itemize}
+Bias-Variance Trade-off can be generalized to classification (the same principles apply)\\
+
+Sources of Bias \& Bias Reducation
+\begin{itemize}
+    \item How to reduce bias
+    \begin{itemize}
+        \item 
+    \end{itemize}
+\end{itemize}
+
+Sources of Variance \& Variance Reduction
+\begin{itemize}
+    \item Noise in labels or features
+    \item Models are too ``local" - sensitive to small changes in feature values (overfitting)
+    \item Training dataset too small
+    \item How to reduce variance
+    \begin{itemize}
+        \item Don't use kernels
+        \item Drop interaction terms
+        \item Regularization
+        \item Feature selection
+        \item Ensemble (after midterm)
+    \end{itemize}
+\end{itemize}
+
+Recap: Regularization
+$$J(\vec \theta) = R_N (\vec \theta) + \lambda \Omega (\vec \theta) $$
+\begin{itemize}
+    \item $\lambda$ is the ``knob" that controls I care about:
+    \begin{itemize}
+        \item (1) fitting the data vs (2) reducing model complexity
+        \item If I increase $\lambda$, I am reducing the emphasis I am putting it out on empirical risk/proxy for training error so I am more focused on reducing model complexity (\textbf{NOT} fitting the data)
+    \end{itemize}
+    \item $J(\vec \theta)$: regularized empirical risk
+    \item $R_N(\vec \theta)$: Empirical risk/proxy for training error
+    \item $\lambda \Omega (\vec \theta)$: Regularization
+    \item Objective: minimize regularized empirical risk
+    \begin{itemize}
+        \item $\underset{\vec \theta}{min} R_N(\vec \theta) + \lambda \Omega(\vec \theta) \Leftrightarrow \underset{\vec \theta}{min} R_N (\vec \theta) s.t. \Omega (\vec \theta) \leq B$
+        \item Intuition
+        \begin{itemize}
+            \item Push model parameters to a default value of 0
+            \item Resist setting model parameters from default value unless data strongly suggest otherwise
+            \item Occam's Razor: go for the solution that makes sense
+        \end{itemize}
+        \item Common Regularizers
+        \begin{itemize}
+            \item L1 Norm (Square)
+            \item L2 Norm (Circle)
+            \item L1 + L2 Norm (bit of both)
+        \end{itemize}
+        \item Regularizer Comparison
+        \begin{itemize}
+            \item L2-penalty: encourages \textbf{small} coefficients (but not necessarily 0), also known as shrinkage or weight decay. Closed-form solution exists
+            \item $||\vec \theta||_2 ^2 = \sum_{j=1} ^ d \theta _j ^ 2$
+            \item L1-penalty drives some coefficients to zero. Encourage \textbf{sparsity, effectively selecting features to use}. No closed-form, but efficient algorithm exists (some variants of SGD)
+            \begin{itemize}
+                \item One issue: if we have very correlated features, L2 will push them to equal coefficients. L1 regularization might randomly select one feature, which harms our ability to interpret features. Elastic net does get around this issue
+            \end{itemize}
+            \item Elastic net (weighted L1 + L2): Elastic net balances between ridge and LASSO. Selects features like LASSO. Shrinks coefficients of correlated predictions like ridge.
+        \end{itemize}
+        \item If there's an offset/intercept, this coefficient is usually left unpenalized (depending on the implementation)
+        $$\underset{\vec \theta,b}{min}\sum_{i=1} ^N \frac{\vec \theta \cdot \vec x^{(i)} + b - y^{(i)})^2}{2} + \lambda \frac{||\vec \theta||^2}{2}$$
+        \item Regularization strength can be ``unfair" if features are on different scales
+        \begin{itemize}
+            \item Feature preprocessing (centering, which can help with offset parameter b, and normalization, to address scales)
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Linear Regression: sklearn implementation
+\begin{itemize}
+    \item sklearn.linear\_model
+    \begin{itemize}
+        \item Linear Regression: unregularized (probably never use, since we almost always want regularization). Closed solution based on Singular Value Decomposition
+        \item Ridge: Can select solver (SGD variants, SVD, etc)
+        \item Lasso: Just ElasticNet with L2-penalty ``turned off", implemented as coordinate descent. Subclass of ElasticNet class
+        \item ElasticNet
+        \item SGDRegressor: Generic SGD routine, mix and match different loss and regularizer
+    \end{itemize}
+\end{itemize}
+
+\section{Logistic Regression}
+\subsection{Overview}
+Motivation
+\begin{itemize}
+    \item Given binary labels $y\in \{-1, +1\}$
+\end{itemize}
+How to make a linear model output a probability?
+\begin{itemize}
+    \item Apply a squashing function (sigmoid) $\sigma: \R \rightarrow [0,1]$
+    \item Sigmoid function: $\sigma(z) = \frac{1}{1 + e^{-z}}$
+    \item Useful properties
+    \begin{itemize}
+        \item $\sigma(-z_ = 1-\sigma(z)$
+        \item $\frac{d}{dx} \sigma(z) = \sigma(z) (1-\sigma(z))$
+        \item Continuous and differentiable. However, not always convex. This is fine though, since we aren't performing gradient descent with it
+    \end{itemize}
+    \item Logistic Regression: $h(\vec x; \vec \theta) = \sigma(\vec \theta \cdot \vec x) = \frac{1}{1 + e ^{\vec \theta \cdot \vec x}}$
+    \item How do we train this model? What loss function should we use?
+    \begin{itemize}
+        \item What we want: $$\sigma(\vec \theta \cdot \vec x) \text{represents} Pr[y=+1 | \vec x;\vec \theta] \text{ probability}$$
+        \item Idea: if $\sigma (\vec \theta \cdot \vec x)$ is truly the $Pr[y=+1 | \vec x;\vec \theta]$, then we can use it to express how likely our data is. $\{\vec x^{(i)}, y^{(i)}\} ^N _ {i=1}$
+        \item $Pr[y^{(i)} | x^{(i)}];\vec \theta] =  \begin{cases} 
+      \text{if } y^{(i)} = +1, \sigma(\vec \theta \cdot \vec x^{(i)}) \\
+      \text{if } y^{(i)} = -1, 1-\sigma(\vec \theta \cdot \vec x^{(i)}) \\
+       \end{cases} = \sigma (y^{(i)} \vec \theta \cdot \vec x^{(i)}$
+       \item Since each example is independent,
+       $$Pr[\{y^{(i)}\}_{i=1}^N | \{\vec x^{(i)} \}^N _ {i=1} ; \vec \theta] = \Pi _{i=1}^N \sigma(y^{(i)} \vec \theta \cdot \vec x^{(i)})$$
+       \item Goal: maximize likelihood of data $$ \vec \theta ^* = \underset{\vec \theta}{argmax} \Pi ^N _{i=1} \frac{1}{1 + e^{-y^{(i)}} \vec \theta \cdot \vec x^{(i)}}$$
+       \item Problems: We want something in the form of $$\vec \theta ^* = \underset{\vec \theta }{argmin} \sum_{i=1}^N loss(|vec x^{(i)}, y^{(i)}, \vec \theta)$$
+       \item Tricks
+       \begin{itemize}
+           \item Take the log. $log\Pi \cdots = \sum log\cdots$
+           \begin{itemize}
+               \item $\underset{\vec \theta}{argmax} log \Pi ^N _{i=1} \frac{1}{1 + e^{-y^{(i)}} \vec \theta \cdot \vec x^{(i)}} = \underset{\vec \theta}{argmax}\sum ^N _{i=1} log \frac{1}{1 + e^{-y^{(i)}} \vec \theta \cdot \vec x^{(i)}}$
+           \end{itemize}
+           \item Take the negative
+           \begin{itemize}
+               \item $\underset{\vec \theta}{ argmin} \sum ^N _{i=1} [log({1 + e^{-y^{(i)}} \vec \theta \cdot \vec x^{(i)}})]$
+           \end{itemize}
+           \item Logistic loss: $loss_{log} (\vec x^{(i)}, y^{(i)} ; \vec \theta) = log(1 + e^{y^{(i)} \vec \theta \cdot \vec x^{(i)}})$. Now, we have a concave loss function
+           \item We meet the conditions we need to qualify for SGD
+           \begin{itemize}
+               \item Continuous
+               \item Differentiable 
+               \item Convex
+           \end{itemize}
+           \item $\nabla _{\vec \theta} log(1+ e^{-y^{(i)} \vec \theta \cdot \vec x ^{(i)}})$
+           \begin{itemize}
+               \item Unfortunately, there is no known closed-form solution for the general case
+               \item We can show there is no global optimum
+           \end{itemize}
+       \end{itemize}
+       \item With logistic regression, we not only generate a decision boundary in a sense, we add a probability as well
+       \item Potential problem: sometimes logistic regression may squeeze outcomes too much to be generalizable (very steep slope at a point)
+       \begin{itemize}
+           \item Why does this happen? $||\vec \theta|| \rightarrow \infty$. Norm of theta approaches infinity
+           \item How to fix? Regularization
+       \end{itemize}
+    \end{itemize}
+\end{itemize}
+
 \section{Terminology}
 \begin{itemize}
     \item Features: Traits
@@ -303,6 +821,14 @@ Empirical Risk
     \item Label space: Range of values our label can have
     \item Labeled dataset: data with both a feature vector and label
     \item Classes: categories of feature labels
+    \item Empirical Risk: a proxy for training error
+    \item Loss Functions
+    \begin{itemize}
+        \item Zero-one loss
+        \item Perceptron : $loss(y\vec\theta \cdot \vec x) =max \{0, -y \vec \theta \cdot \vec x)\}$
+        \item Hinge loss
+        \item Logistic lozz
+    \end{itemize}
 \end{itemize}
 
 \end{document}
