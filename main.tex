@@ -809,6 +809,483 @@ How to make a linear model output a probability?
     \end{itemize}
 \end{itemize}
 
+Refresher
+\begin{itemize}
+    \item Supervised Learning
+    \begin{itemize}
+        \item Goal: generalization to unseen data
+        \item Problem Setup (minimize empirical risk)
+        \begin{itemize}
+            \item Classification
+            \item Regression
+        \end{itemize}
+        \item Minimize regularized empirical risk
+        \begin{itemize}
+            \item Loss function
+            \begin{itemize}
+                \item Zero-one loss
+                \item perception loss
+                \item logistic loss
+                \item hinge loss
+                \item squared loss
+            \end{itemize}
+            \item Regularization
+            \begin{itemize}
+                \item L2
+                \item L1
+                \item ElasticNet
+            \end{itemize}
+            \item Linear Models
+            \begin{itemize}
+                \item Perceptron (perception loss)
+                \item Logistic regression (logistic loss)
+                \item SVM (Support Vector Machines, hinge loss, and L2 regularization)
+                \item Ridge regression (squared loss + L2 regularization)
+                \item LASSO (squared loss + L1 regularization)
+            \end{itemize}
+            \item Optimization tools
+            \begin{itemize}
+                \item Stochastic gradient descent (first-order)
+                \item Newton's method* (second-order, speed up via 2nd order)
+                \item Closed-form solution
+                \item Lagrangian (related to SVMs)
+            \end{itemize}
+            \item Practical Aspects
+            \begin{itemize}
+                \item Model assessment
+                \item Model selection
+                \item Feature selection
+            \end{itemize}
+        \end{itemize}
+        \item Linear Classification Model Implementation
+        \begin{itemize}
+            \item sklearn.linear\_model.Logistic Regression
+            \begin{itemize}
+                \item L1/L2/elasticnet regularized logistic regression, C = 1/$\lambda$ is inverse of regularization strength
+            \end{itemize}
+            \item sklearn.linear\_model.SGDClassifier
+            \begin{itemize}
+                \item Mix and match loss nad regularizer
+            \end{itemize}
+        \end{itemize}
+        \item Training sklearn models
+        \begin{itemize}
+            \item Initialize class
+            \item fit class with train dataset
+            \item Call predict
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Model Assessment}
+\begin{center}
+    ``Remember that all models are wrong; \\the practical question is how wrong do they have to be to not be useful."
+\end{center}
+Classification Performance
+\begin{itemize}
+    \item $\hat y = h(\vec x;\vec \theta) \text{ and }D= \{\vec x^{(i)}, y^{(i)}\}_{i=1}^N \vec x^{(i)} \in \R^d, y^{(i)} \in \{-1, +1\}$
+    \item Misclassification error: $\frac{1}{N} \sum_{i=1} ^N I[\hat y^{(i)} \neq y^{(i)}]$
+    \item Accuracy: $\frac{1}{N} \sum_{i=1} ^N I[\hat y^{(i)} =y^{(i)}]$
+    \item What's wrong with accuracy?
+    \begin{itemize}
+        \item Doesn't model magnitude of an error
+        \item Assumes equal cost for both types of error (Type 1 and Type 2 error)
+        \item Can be inflated when data is imbalanced
+        \begin{itemize}
+            \item Accuracy of the base case (predicting dominant class) can be very high
+        \end{itemize}
+        \item \textbf{Confusion matrix }:
+        
+        \begin{tabular}{|c|c|c|}
+            \hline
+             & Predicted (-) & Predicted (+)\\
+             \hline
+            Actual: (-) & True Negative (TN) & False Negative (FP) \\
+            \hline
+            Actual: (+) & False Negative (FP) & True Positive (TP)\\
+            \hline
+        \end{tabular}
+        \item (TP +TN)/N: accuracy
+        \item (TP/(TP+FN) sensitivity, true positive rate (TPR), recall
+        \item TN/ (TN+FP) specificity, true negative rate (TNR)
+        \item FP(TN+FP) false positive rate (FPR), 1-specificity
+        \item TP/(TP+FP) precision, positive predictive value (PPV)
+        \item \textbf{Questions}
+        \begin{itemize}
+            \item What if I predict everything positive? Or negative?
+            \item Whats the range of each metric (min and max possible value)?
+            \item How can I maximize all metrics?
+        \end{itemize}
+        \item Composite Metrics: Trade-offs
+        \begin{itemize}
+            \item Balanced Arracy: mean of sensitivity and specificity \[\frac{1}{2} \left(\frac{TP}{TP + FN} + \frac{TN}{TN+FP}\right)\]
+            \item F1-score: harmonic mean of precision and recall
+            \begin{itemize}
+                \item $F_1 = \frac{2}{\frac{1}{TPR} + \frac{1}{PPV}} = 2\frac{Precision * Recall}{Precision + Recall}$
+                \item $F_{\beta} = (1+\beta^2) \frac{Precision * Recall}{(\beta^2 Precision) + Recall}, \beta > 0$
+            \end{itemize}
+        \end{itemize}
+        \item Discrimination Thresholds
+        \begin{itemize}
+            \item Predicted Class \{-1,+1\}: $h(\vec x;\vec \theta) = sign(\vec \theta \cdot \vec x)$ 
+            \item Predicted Class Probability [0,1]: $h(\vec x;\vec \theta) = \sigma (\vec \theta \cdot \vec x)$ 
+        \end{itemize}
+        \item Receiver Operating Characteristic Curve
+        \begin{itemize}
+            \item Y-axis: true positive rate (sensitivity)
+            \item Y-axis: false positive rate (1-specificity)
+            \item ROC curve: How to get multiple points? $h(\vec x;\vec \theta) = \sigma (\vec \theta \cdot \vec x)$ 
+            \begin{itemize}
+                \item Each point on the ROC curve corresponds to a threshold / a decision boundary
+                \item Each point represents a different tradeoff between FPR and TPR
+                \item Each point represents a \textbf{different tradeoff between FPR (False Positive Rate, \\$1-Specificity$) and TPR (True Positive Rate, $Sensitivity$)}
+            \end{itemize}
+            \item Shows the trade-off between sensitivity and specificity
+            \item \textbf{Problem:} Still not a very good summary metric, \textbf{it's not a single number}
+        \end{itemize}
+        \item Area under ROC Curve (AUROC, ROC-AUC)
+        \begin{itemize}
+            \item Calculated using the trapezoid rule: sklearn.metrics.auc
+            \item Intuitive meaning: Given two randomly chosen examples, one pos. and one neg. pair, what is the probability of ranking positive example higher?
+            \item Intuitively an integral, produces a single number that we can evaluate
+            \item AUROC number output interpretation
+            \begin{itemize}
+                \item 1: perfect prediction
+                \item $>$ 0.9: excellent prediction (maybe too good) - something potentially fishy, should check for \textbf{information leakage} (check if the model is aware of the answer in the training, something might be wrong)
+                \item 0.8: good prediction
+                \item 0.5: random prediction
+                \item $<$0.5: something wrong!
+            \end{itemize}
+            \item Random baseline: AUROC = 0.5
+            \item Above 0.7, is good. 0.9 may be a ruh-oh (too good)
+        \end{itemize}
+        \item Precision-Recall Curve \& AUPRC (Area under Precision-Recall Curve)
+        \begin{itemize}
+            \item A high AUPRC represents both high recall and precision
+            \item ROC curves should be used when there are roughly equal numbers of observations for each class
+            \item Precision-Recall curves may be used when there is a moderate to large class imbalance
+            \item Random baseline: AUPRC = \% pos
+        \end{itemize}
+        \item Classifier Probability Calibration
+        \begin{itemize}
+            \item Calibration Curve (aka Reliability Diagram)
+        \end{itemize}
+        \item PRE: precision (recall: $\frac{TP}{TP+FP}$)
+        \item \textbf{Multiple} classes metrics (examples here are for 3 classes)
+        \begin{itemize}
+            \item Accuracy: \[ACC = \frac{TP1 + TP2 + TP3}{Total}\]
+            \item Macro-average precision: \[PRE_{macro} = \frac{PRE_1 + PRE_2 + PRE_3}{3}\]
+            \item Micro-average precision: \[PRE_{micro} = \frac{TP1 + TP2 + TP3}{TP1 + TP2 + TP3 + FP1 + FP2 + FP3}\]
+        \end{itemize}
+        \item Regression Metrics
+        \begin{itemize}
+            \item Given $\hat y = f(\vec x;\vec \theta)$ and $D-\{\vec x^{(i)}, y^{(i)}\}_{i=1}^N, \vec x^{(i)} \in \R^d, y^{(i)} \in \R$
+            \item Mean squared error
+            \item Mean absolute error
+            \item Root mean squared error
+            \item Mean bias error: $MBE = \frac{1}{N} \sum_{i=1} ^N \left(\hat y ^{(i)} - y^{(i)}\right)$
+            \item For each metric, think about the following
+            \begin{itemize}
+                \item What is its range (minimum and maximum possible score)?
+                \item What's the ``perfect score"?
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+The pitfall of training error
+\begin{itemize}
+    \item When the model is overly complex, training error can be close to 0\%
+    \begin{itemize}
+        \item Lookup table
+        \item Kernelized classifiers with no regularization
+    \end{itemize}
+    \item Simplest solution: \textbf{Holdout} (forming a test set by reserving a portion of the dataset)
+    \begin{itemize}
+        \item Hold out some data(i.e., test data)
+        \item What should the percentage be? 
+        \item What to do when there isn't enough data?
+        \item Test data wasted?
+    \end{itemize}
+    \item Train/Test splits
+    \begin{itemize}
+        \item Too few for training $\rightarrow$ unable to properly learn from the data
+        \item Too few for testing $\rightarrow$ bad approximation of the true error
+        \item Rule of thumb: enough test samples to form a reasonable estimate
+        \item Common split size: $70\%-30\%$ or $80\% - 20\%$
+    \end{itemize}
+\end{itemize}
+Can we optimize all metrics at the same time?
+\begin{itemize}
+    \item No?
+\end{itemize}
+Selecting a Threshold
+\begin{itemize}
+    \item ``I want a minimum sensitivity of $80\%\rightarrow$ makes sure we catch $80\%$ of the positive cases. Sensitivity is our true positive rate.
+    \begin{itemize}
+        \item Using ROC, we match sensitivity to the TPR on y-axis to get our False positive rate from the y-axis
+        \item Using our Precision-Recall Curve, we use the fact that \textbf{recall is the same as sensitivity} to get the precision from the y-axis based on recall value of 0.8
+    \end{itemize}
+\end{itemize}
+
+\subsection{Testing our Model (Testing Dataset)}
+\begin{itemize}
+    \item Holdout
+    \begin{itemize}
+        \item 1 partition, training only 1 model
+        \item ``Final model": just the model we train
+        \item Get error bars from bootstrapping the test set
+        \item Bootstrap Confidence intervals
+        \begin{itemize}
+            \item Sample with replacement 1000times
+            \item Calculate performance metric on each bootstrap (where a bootstrap is a sample)
+            \item Measure an error by creating a confidence interval (often 95\% confidence interval)
+        \end{itemize}
+    \end{itemize}
+    \item K-fold Cross Validation
+    \begin{itemize}
+        \item Sliding window through dataset
+        \item K possible partitions
+        \item K models trained
+        \item ``Final model": Average(?) of the models
+        \item Get error bars over K folds
+    \end{itemize}
+    \item Monte-Carlo Cross Validation
+    \begin{itemize}
+        \item Random sub-sampling
+        \begin{itemize}
+            \item Randomly select (without replacement) some fraction of your data to form training set
+            \item As many partitions as possible
+            \item If we repeat 1000 times, will train 1000 models
+            \item ``Final model"? Average(?)
+            \item Get error bars from over 1000 repetitions
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Model Selection}
+\begin{itemize}
+    \item Select \textbf{hyperparameters} of the model: Meta-optimization
+    \begin{itemize}
+        \item Regularization strength
+        \item Regularization type (L1 or L2)
+        \item Kernel type (linear vs RBF, radial basis function)
+        \item Loss function (logistic regression or SVM)
+        \item Polynomial degree
+    \end{itemize}
+    \item Different from model \textbf{parameters}
+    \begin{itemize}
+        \item Feature coefficients
+        \item Picture it as meta-optimization
+    \end{itemize}
+\end{itemize}
+How to select the best hyperparameters?
+\begin{itemize}
+    \item Simple, popular solution: K-Fold CV for hyperparameter Selection
+    \begin{itemize}
+        \item Define C as a hyperparameter
+        \item Best C ($\frac{1}{\lambda}?$)
+        \item Training a lot of models:
+        \begin{itemize}
+            \item Number of models we are training: number of hyperparameters $C$ we are testing times $K$ (number of folds, \# of windows over data)
+            \item Hyparameter Search Space
+            \begin{itemize}
+                \item GridSearchCV: exhaustive search for best parameter values using cross-validation
+                \item RandomizedSearchCV: randomized search over parameters
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+How to do Model Selection and Model Training at the SAME time?
+\begin{itemize}
+    \item We are trying to solve 2 problems at one time, best model parameters, and best hyperparameters
+    \item Don't use the same samples to choose optimal hyperparameters and to estimate test/generalization error
+    \begin{itemize}
+        \item Overfitting
+    \end{itemize}
+    \item How to solve this? Three-way split
+    \begin{itemize}
+        \item Training, Validation, Testing
+        \item Validation data will NOT be used for training model
+        \item Test data will NOT be used for training model or tuning hyperparameters
+        \item Both validation and testing dataset are holdout samples
+        \item Example split: 80-10-10 split
+    \end{itemize}
+    \item K-Fold CV + Holdout
+    \begin{itemize}
+        \item Holdout: test dataset
+    \end{itemize}
+    \item Nested CV
+    \begin{itemize}
+        \item Outer k-fold loop: Assess the performance
+        \item Inner k-fold loop: ????
+    \end{itemize}
+\end{itemize}
+
+\section{Data cleaning}
+\begin{itemize}
+    \item ``Garbage in, garbage out": important to properly clean data
+    \item Feature Engineering
+    \begin{itemize}
+        \item Quantitative/numeric variables describe numerical measurements
+        \begin{itemize}
+            \item Discrete examples: age in years, word counts in a document
+            \item Continuous examples: exact age, time durations, temperatures
+        \end{itemize}
+        \item Categorical variables take values in two or more distinct categories with no intrinsic ordering between them
+        \begin{itemize}
+            \item Examples: Cities, part of speech, blood type, yes/no
+            \item Often use one-hot encoding
+        \end{itemize}
+        \item Ordinal Variables are similar to a categorical variable, except there is a clear ordering of the values. However, does not necessarily make sense to encode ordinal variables as numbers because operations such as averaging are meaningless
+        \begin{itemize}
+            \item Examples: temperature (cold/warm/hot), educational experience (high school)
+        \end{itemize}
+    \end{itemize}
+    \item Discretization of Numerical Features
+    \begin{itemize}
+        \item aka quantization or binning
+        \item Converts continuous features into discrete categories
+        \begin{itemize}
+            \item Example: age. [18,25], (25,45], (45, 65]
+        \end{itemize}
+        \item Why? Allows a linear model to learn non-linear relationships
+    \end{itemize}
+    \itme Handling Missing Data
+    \begin{itemize}
+        \item Almost all real-world situations come with missing data for various reasons
+        \item However, most models cannot natively handle missing data
+        \item Should we...
+        \begin{itemize}
+            \item Drop examples with missing values? Probably not, we will reduce our data size quite a bit
+            \item Drop features with missing values? If we think it won't contribute anything and contains a lot of missing values, yes.
+        \end{itemize}
+        \item Imputation approaches
+        \begin{itemize}
+            \item Univariate imputation
+            \item Multivariate imputation
+            \item Nearest-neighbor imputation
+            \item + Missing indicators
+            \item Look at scikit-learn impute documentation
+        \end{itemize}
+    \end{itemize}
+    \item Time Series Data
+    \begin{itemize}
+        \item Summary statistics:
+        \begin{itemize}
+            \item mean, std
+            \item min, median, max, Q1, Q3
+            \item cumulative sum
+            \item count
+            \item count above threshold
+            \item count below threshold
+        \end{itemize}
+        \item Trends:
+        \begin{itemize}
+            \item linear slope
+            \item piecewise slopes
+        \end{itemize}
+        \item Periodic trends
+        \begin{itemize}
+            \item Fast Fourier transform coefficients
+        \end{itemize}
+    \end{itemize}
+    \item Three categories of Feature Selection: methods
+    \begin{itemize}
+        \item Filter Methods: Before model fitting (preprocessing)
+        \begin{itemize}
+            \item Rank individual features according to some statistical measure
+            \item Filter out (remove) features that fall below a certain threshold
+            \item Example measure: sample variance of feature
+            \item Example measure: Pearson's correlation between feature and label between -1 and 1
+        \end{itemize}
+        \item Wrapper Methods: After model fitting (search)
+        \begin{itemize}
+            \item View feature selection as a model selection problem
+            \item Problems with brute-force, exhaustive search for feature selection? For $d$, $2^d - 1$ combinations (exponential)
+            \item Instead, we can use a greedy approach
+            \begin{itemize}
+                \item Greedily add (forward selection) /remove features (backward elimination)
+                \item Evaluate 
+            \end{itemize}
+            \item Forward Selection
+            \begin{itemize}
+                \item Start with 0 features, where F contains candidate features we haven't used.Test model with metrics and evaluate
+                \item Forward selection is more applicable backwards selection if we start with a large amount of features??
+            \end{itemize}
+        \end{itemize}
+        \item Embedded Methods: During model fitting (regularization)
+        \begin{itemize}
+            \item Incorporate feature selection as part of the model fitting process
+            \item L1 regularization LASSO
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+\begin{tabular}{|p{4cm}|p{3.5cm}|p{3.5cm}|p{3.5cm}|}
+    \hline
+    &Filter Methods & Wrapper Methods & Embedded Methods  \\
+    \hline
+    Computational cost&Fast. Run only once, Scalable to high dim.&Slow (slowest)&Sits between filter and wrapper \\
+    \hline
+    Model\& Algorithm&Generic, agnostic to models/algos&Specific, considers model performance& Only applies to specific models/algos\\
+    \hline
+    Overfitting? & Unlikely&Higher risk of overfitting&Regularization explicitly controls overfitting\\
+    \hline
+\end{tabular}
+
+\section{Case Study of Prof's Research: Predicting COVID-19 Outcomes with Patient Data}
+\begin{itemize}
+    \item Machine learning can match treatments or predict conditions
+    \item Goal: augment clinical practice and improve patient outcomes
+    \item Problem: Medical errors, burnout and shortage of clinicians
+    \item Risk Stratification in COVID-19
+    \begin{itemize}
+        \item Identifying patients who will develop severe disease
+    \end{itemize}
+    \item Epic Deterioration Index (EDI) 
+    \begin{itemize}
+        \item Score 0-100, predicts who will deteriorate (higher is sicker)
+        \item Developed by Epic
+        \item Makes predictions every 15 minutes on all admitted patients
+        \item Found model had AUROC score = 0.76
+        \item But...
+        \begin{itemize}
+            \item Black box (no publications)
+            \item Fixed, not tailed to patient cohort
+            \item Not calculated until patient is admitted
+        \end{itemize}
+        \item Solution: M-CURES (Michigan Critical Care Resource Utilization and Risk Evaluation System)
+        \begin{itemize}
+            \item Leverage electronic health records (EHR) to help estimate patient risk
+            \item Repeatedly assesses patient's risk every 4 hours
+            \item Defining clinical deterioration
+            \begin{itemize}
+                \item In-hospital mortality, invasive mechanical ventilation, heated high flow nasal cannula (breathing mask), intravenous vasopressors (low blood pressure, shock)
+            \end{itemize}
+            \item Challenge \#1: Did  not have a large amount of data from COVID-19 patients on which to train
+            \begin{itemize}
+                \item Train: Looked at patients with respiratory distress from 2015-2019 (n=35040)
+                \item Validation Cohort: adults admitted to MM with COVID-19 who required supplemental oxygen March 1st 2020 to February 28th 2021 (n=956 hospitalizations)
+            \end{itemize}
+            \item 500 linear models based on 9 clinical variables selected from 15,952 variables extracted from the EHR
+        \end{itemize}
+        \item Feature selection process
+        \begin{itemize}
+            \item Extract from EHR databases
+            \item Pre-filter based on missing frequency
+            \item Remove variables related to outcomes (based on advice from clinical experts) or composite scores (based on other measured variables), other variables that induce bias (Art Blood Gas only measured by hospitals without high at-risk patients)
+            \item Mapped variables into binary features
+        \end{itemize}
+        \item Use case \#1 - triaging `high risk': identify individuals who will experience an adverse outcome within the first 5 days of admission
+        \item Use case \#2 - triaging `low risk': 48 hours after admission, predict who is unlikely to deteriorate during the remainder of the admission
+    \end{itemize}
+    \item External Validation
+    \begin{itemize}
+        \item Tested with 12 external hospitals to measure generalization performance
+        \item Challenge: Data sharing agreements can take significant time to establish
+    \end{itemize}
+\end{itemize}
+
 \section{Terminology}
 \begin{itemize}
     \item Features: Traits
