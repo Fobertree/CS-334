@@ -32,7 +32,7 @@
 \tableofcontents
 
 \vspace{.25in}
-
+\newpage
 \section{Intro}
 \subsection{Basics}
 \begin{itemize}
@@ -1151,7 +1151,7 @@ How to do Model Selection and Model Training at the SAME time?
         \end{itemize}
         \item Why? Allows a linear model to learn non-linear relationships
     \end{itemize}
-    \itme Handling Missing Data
+    \item Handling Missing Data
     \begin{itemize}
         \item Almost all real-world situations come with missing data for various reasons
         \item However, most models cannot natively handle missing data
@@ -1285,27 +1285,96 @@ How to do Model Selection and Model Training at the SAME time?
         \item Challenge: Data sharing agreements can take significant time to establish
     \end{itemize}
 \end{itemize}
-
-\section{Terminology}
+Kernel trick (implicit feature mapping)
 \begin{itemize}
-    \item Features: Traits
-    \item Feature vector: a vector of features
-    \item Feature space: the set of all possible combinations of features (cartesian product)
+    \item Helps us learn very nonlinear decision boundaries
+\end{itemize}
+
+\section{Decision Tree}
+\begin{itemize}
+    \item Can help us learn non-linear decision boundaries
+    \item What functions can be represented using a decision tree?
     \begin{itemize}
-        \item Ex: \{int between 0 and 120\} $\times$ \{student, employed, unemployed\}
+        \item Any boolean function of input features
     \end{itemize}
-    \item Label: How we translate
-    \item Label space: Range of values our label can have
-    \item Labeled dataset: data with both a feature vector and label
-    \item Classes: categories of feature labels
-    \item Empirical Risk: a proxy for training error
-    \item Loss Functions
+    \item Note:
     \begin{itemize}
-        \item Zero-one loss
-        \item Perceptron : $loss(y\vec\theta \cdot \vec x) =max \{0, -y \vec \theta \cdot \vec x)\}$
-        \item Hinge loss
-        \item Logistic lozz
+        \item As thee number of nodes grows, our hypothesis space also grows
+        \item Trivial solution: each example has its own leaf node (assume no noise) if $\vec x\in\{0,1\}^d$, we'll have $2^d$ leaf nodes
+        \item Problem: overfitting (overly complex model)
+        \item Goal: find the smallest tree that performs well on training data
+        \begin{itemize}
+            \item Finding optimal tree is NP-complete
+        \end{itemize}
+        \item Instead, take a greedy approach
+        \begin{itemize}
+            \item Start with empty tree
+            \item Split on the ``best" feature
+            \item Recurse each subtree
+        \end{itemize}
+        \item What is a ``good" split?
+        \begin{itemize}
+            \item Split on parameters where we get a clear imbalance between possible classes with such characteristics (can clearly classify)
+            \item In other words,we want to erase uncertainty
+        \end{itemize}
+        \item How do we measure uncertainty?
+        \begin{itemize}
+            \item \textbf{Shannon's Entropy}
+            \item $D_N$ training data, binary outcome/label $y\in\{-1,+1\}$
+            \item $P_{(+)}$ fraction of positive examples
+            \item $P_{(-)}$ fraction of negative examples\[\text{Entropy of }D_N = -(P_{(+)} \log_2 P_{(+)} + P_{(-)} \log_2P_{(-)})\]
+            \begin{itemize}
+                \item Base 2 since measuring in bits (think binary as seen in bit manipulation and base 2)
+                \item Expected number of bits needed to encode a randomly chosen value of y
+            \end{itemize}
+            \item Notation: H is entropy, y is a RV
+            \item $H(y) = -\left(\sum_{k=1}^k p(y=y_k) \log_2 p(y=y_k)\right)$
+            \item Expanded: $=-\left(p(y=y_1)\log_2p(y=y_1) + p(y=y_2) \log_2 p(y=y_2) + \cdots + p(y=y_k)\log_2p(y=y_k)\right)$
+            \item Low entropy corresponds with low uncertainty
+            \item \textbf{``Peakyness}": higher if we have a clear peak in frequency
+        \end{itemize}
+        \item \textbf{Conditional Entropy}
+        \begin{itemize}
+            \item ``If I tell you X, are you still uncertain about Y"?
+            \item $H(y|x=x) = -\sum_{k=1} ^k p(y=y_i | x=x) \log p(y=y_i | x=x)$
+            \item $H(y|x) = \sum_{x\in X} p(x=x) H(y|x=x)$ ``average surprise of y when you know X"
+            \item When does $H(y|X) = 0?$ When Y is completely determined by X
+            \item When does $H(y|X) = H(Y)?$ When Y and X are independent.
+            \item We can use conditional entropy to measure the quality of a split
+            \item \textbf{Information Gain}
+            \begin{itemize}
+                \item $IG(X_;Y) = H(y)-H(y|X)$
+                \item $H(y)$: entropy of parent node
+                \item $H(y|X)$: average entropy of children nodes
+                \item Intuitively: amount of information we learn about Y by knowing the value of X (and vice versa $\Rightarrow$ symmetric)
+            \end{itemize}
+        \end{itemize}
+        \item Example:
+            \begin{itemize}
+                \item Calculate entropy of y in a dataset
+                \begin{itemize}
+                    \item $H(y) = -(\frac{29}{64}\log_2 \frac{29}{64} + \frac{35}{64}\log_2 \frac{35}{64}) = 0.9937$
+                \end{itemize}
+                \item Calculate the conditional entropy for $X_1$ ``snow" and $X_2$ ``wind"
+                \begin{itemize}
+                    \item $H(y|X_1) = - \frac{26}{64} (H(y|X_1 = T)) - \frac{38}{64}( H(y|x_1 = F))$
+                    \item Plug in $p\log p$
+                    \item $H(y|x_2) = -\frac{45}{64}(\frac{18}{45} \log \frac{18}{45} + \frac{27}{45}\log \frac{27}{45}) - \frac{19}{64}(\frac{11}{19} \log \frac{11}{19} + \frac{8}{19}\log \frac{8}{19}) = 0.97$
+                \end{itemize}
+                \item Calculate the information gain associated with splitting on $X_1$ ``snow" and $X_2$ ``wind"
+                \begin{itemize}
+                    \item Plug in values
+                    \item $IG(x_1;y) = 0.2659$
+                    \item $IG(x_2; y) = 0.0195$
+                    \item $x_1$ has greater information gain, so we have greater uncertainty
+                \end{itemize}
+        \end{itemize}
     \end{itemize}
 \end{itemize}
+Returning to our greedy approach $\rightarrow$ split on node with the highest information gain
+\[\underset{j=1\cdots d}{argmax} IG(x_j; y) = \underset{j=1\cdots d}{argmax} H(y) - H(y|X_j) = \underset{j=1\cdots d}{argmin} H(y|X_j)\]
+when to stop growing a tree?
+
+\input{terminology}
 
 \end{document}
