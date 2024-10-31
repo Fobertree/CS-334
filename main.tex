@@ -22,6 +22,9 @@
 
 \usepackage[hidelinks]{hyperref}
 
+% fix for mathptmx screwing up mathcal
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
+
 \title{CS 334}
 \author{Alexander Liu}
 \date{Fall 2024}
@@ -1336,6 +1339,7 @@ Kernel trick (implicit feature mapping)
         \item \textbf{Conditional Entropy}
         \begin{itemize}
             \item ``If I tell you X, are you still uncertain about Y"?
+            \item Average uncertainty in Y given the value of X
             \item $H(y|x=x) = -\sum_{k=1} ^k p(y=y_i | x=x) \log p(y=y_i | x=x)$
             \item $H(y|x) = \sum_{x\in X} p(x=x) H(y|x=x)$ ``average surprise of y when you know X"
             \item When does $H(y|X) = 0?$ When Y is completely determined by X
@@ -1343,7 +1347,7 @@ Kernel trick (implicit feature mapping)
             \item We can use conditional entropy to measure the quality of a split
             \item \textbf{Information Gain}
             \begin{itemize}
-                \item $IG(X_;Y) = H(y)-H(y|X)$
+                \item $IG(X_;Y) = H(y)-H(y|X_j)$
                 \item $H(y)$: entropy of parent node
                 \item $H(y|X)$: average entropy of children nodes
                 \item Intuitively: amount of information we learn about Y by knowing the value of X (and vice versa $\Rightarrow$ symmetric)
@@ -1374,6 +1378,290 @@ Kernel trick (implicit feature mapping)
 Returning to our greedy approach $\rightarrow$ split on node with the highest information gain
 \[\underset{j=1\cdots d}{argmax} IG(x_j; y) = \underset{j=1\cdots d}{argmax} H(y) - H(y|X_j) = \underset{j=1\cdots d}{argmin} H(y|X_j)\]
 when to stop growing a tree?
+
+We can use decision trees for both classification and regression\\
+Learning Decision Trees
+\begin{itemize}
+    \item Each internal node tests an attribute/feature
+    \item Each branch assigns a value 
+    \item Each leaf node assigns a prediction y
+\end{itemize}
+Another Measure of Uncertainty
+\begin{itemize}
+    \item Gini Index (Gini Impurity)
+    \[Gini(Y) = \sum_{k=1} ^K P(Y= y_k) (1-P(Y=y_k))=1-\sum_{k=1}^K P(Y=y_k)^2\]
+    \item Gini Gain
+    \[GiniGain(X;Y) = Gini*Y) - \sum_{x\in X} P(X=x)Gini(Y|X=x)\]
+\end{itemize}
+Learning Decision Trees
+\begin{itemize}
+    \item Stopping Condition
+    \begin{itemize}
+        \item When all records have the same label (assumes no noise)
+        \item If all records have identical features (no further splits possible)
+        \item If all attributes have zero IG. (this is a bad approach, because we ignore potential interaction between features?)
+    \end{itemize}
+    \item Goal: find the smallest decision tree that minimizes error
+    \item How to avoid overfitting? $\rightarrow$ simpler tree
+    \begin{itemize}
+        \item Set a max depth
+        \item Measure performance on validation data: if growing tree results in worse performance, stop
+        \item post-prune, grow entire/full tree and then greedily remove nodes that affect validation error the least
+    \end{itemize}
+    \item \textbf{Recall: }Tradeoff: Estimation Error \& Approximation Error
+    \begin{itemize}
+        \item Estimation Error (variance)
+        \item Approximation Error (bias)
+    \end{itemize}
+\end{itemize}
+Ensemble Methods
+\begin{itemize}
+    \item Goal: decrease variance without increasing bias
+    \item Idea: average across multiple modl to reduce variance
+    \begin{itemize}
+        \item Ensemble: ``all the part s of a thing taken together so that each part is considered in relation to the whole"
+    \end{itemize}
+\end{itemize}
+Ensemble Methods \& Random Forest
+\begin{itemize}
+    \item Idea: converge over multiple models to reduce estimation error (variance)
+    \item But we only have a single training set, how can we learn multiple models?
+    \begin{itemize}
+        \item Bootstrapping sampling: sample with replacement N times
+        \item $D_N$ becomes $D_N^\prime$
+    \end{itemize}
+    \item \textbf{Bagging:} Bootstrap Aggregating
+    \begin{itemize}
+        \item Create B bootstrap samples. $D_N^{(i)} \cdots D_N^{(B)}$
+        \item train a decision tree on each $D_N^{(b)}, b=1\cdots B$
+        \item classify new example by \textbf{majority vote} (mode)
+    \end{itemize}
+\end{itemize}
+How similar are bootstrap samples?
+\begin{itemize}
+    \item prob example (i) is not selected once: $1-\frac{1}{N}$
+    \item prob example (i) is not selected $at all$: $(1-\frac{1}{N})^N$
+    \item $\underset{lim\rightarrow \infty}{\lim} (1-\frac{1}{N})^N = \frac{1}{e}= 36.8\%$. Expect 36.8\% of samples to never show up
+\end{itemize}
+Why does bagging work?
+\begin{itemize}
+    \item Reduce misclassification rate
+    \item Suppose we have B independent classifiers. $\hat f^b :\R^d \rightarrow \{-1, +1\}$
+    \item Each $\hat f^b$ has misclassification rate of 0.4. $\Rightarrow$ if $y^{(i)} = + 1, p(\hat f^{b} (\vec x^{(i)} ) = -1 ) = 0.4 \forall b=1\cdots B, i=1\cdots N$. vice-versa for $y^{(i)} = -1$
+    \item ``Bagged" classifer\[\hat f^{bag}(\vec x) = \underset{\hat y\in \{-1,+1\}}{argmax}\sum_{b=1}^B \mathbb{I} (\hat f^b (\vec x) = \hat y)\]
+    \[\text{let }B_{-1} = \sum_{b=1} ^B \mathbb{I}(\hat f^b(\vec x) = -1). B_{-1} \sim \text{Binomial}(B,0.4)\]
+    \[P(B_{-1} = K) = \binom{B}{K} (0.4)^K(1-0.4)^{B-K}\]
+    \item Misclassification rate of bagged classifier\[P(\hat f(\vec x^{(i)} ) = -1) = P(B_{-1} \geq B/2) \text{(majority vote)}\]
+    \[=1-P(B_{-1} < B/2) \text{(cdf of binomial)}\]
+    \[=1-\sum_{k=}^{LB/2} \binom{B}{K}(0.4)^K(1-0.4)^{B-K}\]
+    \[\underset{B\rightarrow \infty}{\lim}\sum_{k=1} ^{LB/2} \binom{B}{K}(0.4)^K(1-0.4)^{B-K} = 1\]
+    \[\underset{B\rightarrow \infty }{\lim} P(\hat f^{bag} (\vec x ^{(i)}) = -1) = 0 \text{ as $B\rightarrow \infty$, bagged classifier should be perfect}\]
+    \item Problem: we don't have B independent classifiers (they share the same data)
+    \item How can we decorrelate (make independent) classifiers?
+    \begin{itemize}
+        \item \textbf{Random Forest}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Random Forest}
+Random Forest: decorrelate trees by :
+\begin{itemize}
+    \item \textbf{Two sources of randomness}
+    \begin{itemize}
+        \item bagging
+        \item randomly chosen feature subset
+        \begin{itemize}
+            \item * at each node, the best split chosen from a random subset of $m$ features instead of all $d$ features
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Random Forest Pseudocode
+\begin{itemize}
+    \item For b= $1, \cdots, B$
+    \begin{itemize}
+        \item draw bootstrap sample $D_N^{(b)}$ of size N from $D_N$
+        \item grow decision tree $DT^{(b)}$
+    \end{itemize}
+    \item output ensemble $\{DT^{(1)}, \cdots, DT^{(B)}\}$
+    \item We just finished the bagging pseudocode now onto the subprocedure for growing our DT (decision tree)
+    \begin{itemize}
+        \item subprocedure for growing $DT^{(b)}$
+        \item until stopping criteria are met
+        \item recursively repeat following steps for each node of tree:
+        \begin{itemize}
+            \item select m features at random from d features
+            \item pick best feature to split on (using IG or Gini) from m features: compute IG for all d features, select form top m features
+            \item split node into children
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Recall: Ensemble Methods
+\begin{itemize}
+    \item Idea: average across multiple models
+    \begin{itemize}
+        \item Classification: majority vote
+        \item Regression: average prediction
+    \end{itemize}
+\end{itemize}
+Ensemble Methods - Random Forest
+\begin{itemize}
+    \item Using bagging along, the trees are not independent enough
+    \begin{itemize}
+        \item The bags only consist of $\sim$ 63\% of the original data
+    \end{itemize}
+    \item Random forest has two sources of randomness to decorrelate trees:
+    \begin{itemize}
+        \item Bagging
+        \item At each node, best split is based on a randomly chosen subset of features
+        \begin{itemize}
+            \item Choose the top $n$ features based on information gain then randomly select one
+            \item Randomly select $n$ features, then choose the one with the most information gain
+        \end{itemize}
+        \item Decrease variance with slight increase in bias (similar to bagging)
+    \end{itemize}
+\end{itemize}
+Random Forest: Advantages
+\begin{itemize}
+    \item State of the art: one of the most accurate general-purpose learners available
+    \item Can handle large number of input features without overfitting (variance reduction)
+    \item Can model non-linear boundaries
+    \item Gives features importance
+    \item Can parallelize
+\end{itemize}
+Random Forest: Disadvantages
+\begin{itemize}
+    \item Loss of interpretability (no simple decision rule)
+    \item Difficult to analyze as an algorithm and mathematical properties still largely unknown
+    \item Large number of trees is memory-intensive
+    \item Feature importance may be misleading, prefers categorical features with larger number of categories
+\end{itemize}
+Notes
+\begin{itemize}
+    \item Estimation error (variance) decreased but approximation error (bias) did not change
+    \item Bagging
+\end{itemize}
+
+\subsection{Boosting}
+How do we reduce both approximations and estimation error at the same time?
+\begin{itemize}
+    \item \textbf{Boosting}
+\end{itemize}
+Boosting
+\begin{itemize}
+    \item Combine the output of weak learners (decision stumps)
+    \item The weak learners are combined with weights
+    \item Sequentially train weak learners by compensating the shortcomings of previous learner
+\end{itemize}
+Two popular algorithms
+\begin{itemize}
+    \item AdaBoost (1997): shortcomings are identified by high-weight (misclassified) data points
+    \begin{itemize}
+        \item Prominent in classification
+    \end{itemize}
+    \item Gradient Boosting (19999): shortcomings are identified by residuals or gradients of the loss function (generalize AdaBoost)
+    \begin{itemize}
+        \item Prominent in regression
+    \end{itemize}
+\end{itemize}
+Idea
+\begin{itemize}
+    \item Combine simple ``weak" classifiers into more complex, ``stronger" model. Weak classifier $\rightarrow$ decision stumps. Tree with depth = 1.
+    \[h(\vec x; \vec \theta) = sign(\theta_1 (x_k - \theta_0)) \text{ where } \vec \theta = (k, \theta_0, \theta_1) \text{ k is coordinate, $\theta_0$ is location, $\theta_1$ is direction}\]
+    \item If $\vec \theta ^{(1)} = (1,2,1), h(\vec x; \vec \theta^{(i)}) = sign(1 \cdot (x_1 - 2)) = sign(x_1 - 2) = \mathbb{I}(x_1 \geq 2)$. This is a decision stump
+    \item Another example of creating a decision stump (linear boundary): $\vec \theta ^{(2)} = (2,-3,-1) \Rightarrow h(\vec x; \vec \theta^{)(2)} = \mathbb{I} (x_2 \leq -3) = sign(-x_2 - 3)$
+    \item Combining decision stumps using weights: \[h_M (\vec x) = \sum_{m=1}^M \alpha_m h(\vec x; \vec \theta ^{(m)}, \alpha_m \geq 0\]\[= \alpha_1 h(\vec x; \vec \theta ^{(1)}) + \alpha_2 h(\vec x; \vec \theta^{(2)} ) + \cdots + \alpha_m h(\vec x ; \vec \theta^ {(m)})\]
+    \item This can be seen as a linear classifier $h_m(\vec x) = \vec \alpha \cdot \phi(\vec x)$
+    \begin{itemize}
+        \item $\phi(\vec x) = [h(\vec x; \vec \theta^{(1)}), h(\vec x; \vec \theta^{(2)} \cdots, h(\vec x; \vec \theta^{(m)})]$
+        \item $\vec \alpha = [\alpha_1, \alpha_2, \cdots, \alpha_m]$
+        \begin{itemize}
+            \item Instead of specifying $\phi(\vec x),$ we will learn $\phi(\cdot)$ in addition to $\vec \alpha$
+            \item M, the number of weak learners, is a hyperparameter
+        \end{itemize}
+        \item Adaboost: ``Adaptive Boosting": (one of the simplest and most popular boosting algorithms)
+    \end{itemize}
+\end{itemize}
+\subsubsection{AdaBoost}
+Algorithm Outline:
+\begin{itemize}
+    \item Set example weights uniformly
+    \item For each weak learner $m = 1 \cdots M$
+    \begin{itemize}
+        \item Train decision stump on weighted examples
+        \item Apply decision stump to all examples
+        \item Set decision stump weight based on weighted error
+        \item Set example weights based on ensemble prediction
+    \end{itemize}
+    \item Greedy approach: given the current ensemble, find the next weak learner that, if added, makes a better new ensemble
+    \item Suppose we have the first $(m-1)$ decision stumps, AND their weights $\Rightarrow$ ensemble
+    \begin{itemize}
+        \item $h(\vec x; \vec \theta^{(1)}), h(\vec x; \vec \theta^{(2)}) 
+        \cdots h(\vec x; \vec \theta^{(m-1)}), \alpha_1 \cdots \alpha_{m-1}, h_{m-1} (\vec x)$
+    \end{itemize}
+    \item Goal: find the next decision stump $h(\vec x; \vec \theta^{(m)})$ AND weight $\alpha_m$. Minimize training loss of the new ensemble
+    \item Training loss (empirical risk): $J(\alpha_m, \vec \theta^{(m)})=\sum_{i=1}^N loss \left(y^{(i)} h_m (\vec x^{(i)})\right)$
+    \begin{itemize}
+        \item Exponential $loss(z) = exp(-z) = e^{-z}$
+    \end{itemize}
+    \item First, substitute loss function into training loss expression:
+    \[J(\alpha_m, \vec \theta^{(m)})=\sum_{i=1}^N exp \left(-y^{(i)} h_m (\vec x^{(i)})\right)\]
+    \item Substitute into update rule
+    \[=\sum_{i=1}^N exp(-y^{(i)}[h_{m-1}(\vec x^{(i)} + \alpha_m h(\vec x^{(i)}; \vec \theta ^{(m)}]\]
+    \[=\sum_{i=1}^N exp(-y^{(i)}[h_{m-1}(\vec x^{(i)})) exp(-y^{(i)} \alpha_m h(\vec x^{(i)}; \vec \theta^{(m)}))\]
+    \begin{itemize}
+        \item First exp: previous ensemble. Doesn't have $\vec \theta^{(m)} $
+        \item Second exp: new decision stump
+    \end{itemize}
+    \[J(\alpha_m, \vec \theta^{(m)}) =\sum_{i=1}^N w_{m-1} (i) exp(-y^{(i)} \alpha_m h(\vec x^{(i)} ; \vec \theta^{(m)}))\]
+    \item Let $w_{m-1}(i) = exp(-y^{(i)} h_{m-1} (\vec x^{(i)}))$ doesn't depend on $\vec \theta ^{(m)}$
+    \begin{itemize}
+        \item loss associated with previous ensemble
+        \item using them as weights for examples $i=1\cdots N$
+        \item if previous ensemble makes mistakes on $(i)$, then its weight goes up
+    \end{itemize}
+    \[exp(-y^{(m)} \alpha_m h(\vec x^{(i)} ; \vec \theta^{(m)})) = \begin{cases}
+        \text{if $\vec x^{(i)}$ is correctly classified $\Rightarrow$ exp$(-\alpha_m)$}\\
+        \text{misclassified $\Rightarrow$ exp$(\alpha_m)$}
+    \end{cases}\]
+    \item Note: weighted loss associated with point $\vec x^{(i)}$ in the objective $J(\alpha_m \vec \theta^{(m)}$
+    \item Normalize weights s.t. they sum to 1
+    \[J(\alpha_m; \vec \theta^{(m)} = exp(-\alpha_m) \underset{i: y^{(i)} = h(\vec x^{(i)} ; \vec \theta^{(m)}}{\sum} \tilde w_{m-1} (i) + exp(\alpha_m ) \underset{i: y^{(i)} \neq h(\vec x^{(i)} ; \vec \theta^{(m)}}{\sum} \tilde w_{m-1} (i)\]
+    \[=exp(-\alpha_m) \sum_{i=1}^N \tilde w_{m-1} (i) - exp(-\alpha_m) \underset{i: y^{(i)} \neq h(\vec x^{(i)} ; \vec \theta^{(m)}}{\sum} \tilde w_{m-1}(i)\]
+    \[=exp(-\alpha_m) + (exp(\alpha_m ) - exp(-\alpha_m)) \sum_{i=1}^N \tilde w_{m-1}(i) \mathbb{I} \left( y^{(i)} \neq h(\vec x^{(i)} ; \vec \theta^{(m)}\right)\]
+    \item Our objective can be expressed as \[\underset{\vec \theta^{(m)}, \alpha_m}{argmin} exp(-\alpha_m ) + [exp(\alpha_m) - exp(-\alpha_m)] \sum_{i=1}^N \tilde w_{m-1} (i) \mathbb{I} \left(h^{(i)} \neq h(\vec x^{(i)} ; \vec \theta^{(m)})\right)\]
+    \item Let's decouple (1) first solve for best $\vec \theta^{(m)*}$ (2) then figure out how much weight ($\alpha_m^*$) to give it
+    \begin{itemize}
+        \item 1) $\vec \theta^{(m)*} = \underset{\vec \theta^{(m)}}{argmin} \sum_{i=1}^N \tilde w_{m-1} (i) \mathbb{I}(y^{(i)} \neq h\left(\vec \x^{(m)} ; \vec \theta^{(m)})\right)$
+        \item Exhaustive search via weighted classification error
+        \item Let $\hat \epsilon = \sum_{i=1}^N \tilde w_{m-1}(i)\mathbb{I} \left(y^{(i)} \neq h(\vec x^{(i)} ; \vec \theta^{(m)*})\right)$
+        \item 2) $\alpha_m^* = \underset{\alpha_m}{argmin} exp(-\alpha_m) + (exp(\alpha_m) - exp(-\alpha_m))\hat \epsilon \Leftarrow L(\alpha_m)$
+        \item $\frac{\partial L(\alpha)m)}{\partial \alpha_m} = -exp(-\alpha_m) + [exp(\alpha_m) + exp(-\alpha_)m)] \hat \epsilon \Rightarrow 0$
+        \begin{itemize}
+            \item $-e^{\alpha_m } + \hat \epsilon^{\alpha_m} + \hat \epsilon^{-\alpha_m} = 0$
+            \item $\hat \epsilon e^{\alpha_m} = (1-\hat \epsilon) e^{-\alpha_m}$
+            \item $e^{2\alpha_m} = \frac{1-\hat \epsilon}{\hat \epsilon}$
+            \item $\alpha_m ^* = \frac{1}{2}ln(\frac{1-\hat \epsilon}{\hat \epsilon})$
+            \item Note: if $\hat \epsilon = 0.5, \alpha_m = 0. \text{ (Maybe add some value here to alpha)} \hat \epsilon = 0, \alpha_m = \infty$
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+Putting it all together:
+\begin{itemize}
+    \item Adaboost
+    \begin{itemize}
+        \item Set $\tilde w_0 (i) = \frac{1}{N} for i=1\cdots N$
+        \item For $m=1\cdots M$
+        \begin{itemize}
+            \item Find $\vec \theta^{(m)}$ that minimizes $\epsilon_m$
+            \item Set $\alpha_m = \frac{1}{2} ln(\frac{1-\hat \epsilon_m}{\hat \epsilon_m})$
+            \item Update weights based on the new ensemble
+            \item For $i=1\cdots N$
+            \begin{itemize}
+                \item $\tilde w_m (i) = \frac{\tilde w_{m-1} (i) exp(-y^{(i)} \alpha_m ^* h(\vec x^{(i)} ; \vec \theta^{(m)*})}{w_m}$ (probably wrong check posted notes later)
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
 
 \input{terminology}
 
