@@ -1663,6 +1663,856 @@ Putting it all together:
     \end{itemize}
 \end{itemize}
 
+Boosting vs Bagging
+\begin{itemize}
+    \item Boosting is weighted based on decision stumps
+    \item Bagging is aggregated (can parallelize)
+\end{itemize}
+Weighted training error $\hat \epsilon_m$ (of each iteration's new weak learner). Tends to increase with each boosting iteration
+\begin{itemize}
+    \item Intuitively, things get harder to classify so error goes up   
+\end{itemize}
+Ensemble training error vs Ensemble exponential loss
+\begin{itemize}
+    \item Ensemble training error does not necessarily decrease monotonically
+    \item Ensemble exponential loss decreases monotonically (this is what we're minimizing)
+\end{itemize}
+Ensemble Methods: Summary
+\begin{itemize}
+    \item Ensemble of some classifiers
+    \begin{itemize}
+        \item Bagging, Random Forest
+        \item Boosting: Adaboost, Gradient Boosted Tree, XGBoost
+    \end{itemize}
+    \item Ensemble of different classifiers
+    \begin{itemize}
+        \item Voting, Stacking, Blending
+    \end{itemize}
+\end{itemize}
+
+Feature Representations/Engineering
+\begin{itemize}
+    \item How can we get good representations automatically?
+    \item How can we learn good features?
+    \item This is the motivation for Neural Networks
+\end{itemize}
+
+\section{Introduction to Neural Networks}
+Methods for non-linear classification:
+\begin{itemize}
+    \item Explicit feature mapping $\phi(\vec x)$
+    \[\hat y - sign(\vec \theta \cdot \phi (\vec x))\]
+    \begin{itemize}
+        \item Hand-crafted, labor-intensive, could become very high dimensional ($d\uparrow \uparrow \uparrow$)
+        \item $\phi(\vec x)$ depends on $\vec x$ alone and is not learned
+    \end{itemize}
+    \item Implicit feature mapping via a \textbf{kernel}
+    \[\hat y = sign(\sum_{j=1}^N \alpha_j y^{(j)} K(\vec x^{(j)}, \vec x))\]
+    \[=sign(\vec \alpha \cdot \phi(\vec x))\]
+    where $\phi(\vec x) = [y^{(1)} K(\vec x^{(1)}, \vec x), y^{(2)} K(\vec x^{(2)}, \vec x), ..., y^{(N)} K(\vec x^{(N),}n \vec x)$
+    \begin{itemize}
+        \item $\phi(\vec x)$ depends on $\vec x$ also on training set$\{\vec x^{(i)}, y^{(i)}\}$ but it's not learnd.
+    \end{itemize}
+    \item ensemble classifiers, boosting
+    \[\hat y = sign(\sum_{m=1}^M \alpha_m h(\vec x; \vec \theta^{(m)}))\]
+    \[=sign(\vec \alpha \cdot \phi(\vec x))\]
+    where $\phi(\vec x) = [h(\vec x; \vec \theta^{(1)}), h(\vec x; \vec \theta^{(2)}), ..., h(\vec x; \vec \theta^{(m)})]$
+    \item $\phi(\vec x)$ depends on $\vec x$, learned via a greedy approach
+    \item Neural Networks build upon this idea of jointly learning parameters and feature representations at the same time
+\end{itemize}
+Feed-forward Neural Networks
+\begin{itemize}
+    \item Composed of simple computational units called ``neurons"/``units"
+    \item Input layer, hidden layers, output layer
+    \item Inputs, passed to linear combination with weights $z(\vec x)$, which is then passed to activation function $h=g(z)$ (hidden layer output)
+    \begin{itemize}
+        \item $z=z(\vec z;\vec w) = w_1 x_1 + w_2 x_2 + w_3 x_3$
+        \item $h=g(z) = \frac{1}{1+e^{-z}}$
+    \end{itemize}
+\end{itemize}
+What is the ``single layer" (with a single unit) neural network above actually doing?
+\begin{itemize}
+    \item $\hat y = h(\vec x; \vec w) = \frac{1}{1+exp(-\vec w^T \vec x)}$ where $\vec w = [w_1, w_2, w_3]$
+    \item Logistic regression. Linear combination of input features followed by a squashing function (called squashing because constrains range of y-values)
+    \item In hidden layers, each unit aggregates the output from the preceding layer. Dimension of output $h(\vec x; w)$ depends on architecture
+    \begin{itemize}
+        \item Nodes are units
+        \item Edges are dependencies. Weights are basically attached to the edges
+    \end{itemize}
+\end{itemize}
+Hidden layers
+\begin{itemize}
+    \item Notation
+    \begin{itemize}
+        \item $w_{ik}^{(j)}$
+        \item jth layer
+        \item kth unit
+        \item ith input
+    \end{itemize}
+    \item Forward propagation: linear combination of nodes and edges in predecessor layer
+\end{itemize}
+Common Activation Functions
+\begin{itemize}
+    \item ``ReLU": rectified linear unit
+    \item Thresholded
+    \item Softmax
+    \item Sigmoid
+    \item Hyperbolic tangent, similar to sigmoid but (-1, +1)
+    \item Many more...
+    \item Identity/no activation (not very useful since we are targeting nonlinear decision boundaries)
+\end{itemize}
+
+
+\subsubsection{Activation Functions}
+\begin{itemize}
+    \item Sigmoid
+    \item tanh
+    \item ReLU: intuitively produces a piecewise linear decision boundary
+    \item Leaky ReLU
+    \item Maxout
+    \item ELU 
+\end{itemize}
+Training Neural Nets
+\begin{itemize}
+    \item Neural networks are capable of representing non-linear functions with appropriate settings of the weights/parameters
+    \item Formulate an optimization problem: minimize training risk/empirical risk
+    \item Optimization procedure (e.g. SGD)
+    \item Setup: $D_N = \{\vec x^{(i)}, y^{(i)}\}_{i=1}^N, \vec x \in \R^d, y\in \{-1, +1\}$
+    \item Goal: learn $\vec \theta = [w_{01}^{(1)}, w_{11}^{(1)}, \cdots, w_{km}^{(L)}]$ parameters of the neural network in order to minimize loss over training examples
+    \[J(\vec \theta) = \frac{1}{N} \sum_{i=1}^N loss\left(y^{(i)} h(\vec x^{(i)}; \vec \theta)\right)\]
+    \item Loss can be any (sub) differentiable loss function
+    \begin{itemize}
+        \item Squared loss for regressions
+        \item Hinge loss
+        \item etc.
+    \end{itemize}
+    \item Overview of Optimization Procedure: SGD
+    \begin{itemize}
+        \item (1) initialize $\vec \theta$ (to small random values$^*$)
+        \item (2) select $i=\{1 \cdots N\}$ at random (or mini-batch)
+        \item $\vec \theta^{(k+1)} = \vec \theta^{(k)} - \eta_k \nabla_{\vec \theta} loss (y^{(i)} h(\vec x^{(i)}; \vec \theta)) |_{\vec \theta=\vec \theta^{(k)}}$
+        where $\nabla_{\vec \theta} loss(y^{(i)} h(\vec x^{(i)}; \vec \theta)) = [\frac{\partial L}{\partial \theta_1},\frac{\partial L}{\partial \theta_2},\cdots, \frac{\partial L}{\partial \theta_D}]$
+        \item $L = loss(y^{(i)} h(\vec x^{(i)}; \vec \theta)$
+    \end{itemize}
+    \item Note: gradient vector has the same dimensionality as the number of parameters in the network
+    \[\sum_{l=1}^{\text{\# layers}} (\text{\# inputs of layer l}) \times (\text{\# outputs in layer l})\]
+    \item Warm-up: simple single-layer NN
+    \begin{itemize}
+        \item $h(\vec x; \vec \theta) = w_0 + \sum_{j=1}^d x_j w_j = z$ (no activation function, basic linear combination)
+        \item RECALL: hinge loss: $L = max\{0, 1-yz\}$
+        \item $\frac{\partial L}{\partial w_j} = 
+        \frac{\partial L}{\partial z}
+        \frac{\partial z}{\partial w_j} = -y \mathbb{I} (L>0) x_j$
+        \item $\Rightarrow$ update rule based on $(\vec x, y)$
+             if $L>0:$ // equivalent if $yh(\vec x;\vec \theta^{(k)} ) < 1$ 
+             \begin{itemize}
+                 \item for $j=1...d$\\
+                 \begin{itemize}
+                     \item $w_j^{(k+1)} = w_j ^{(k)} + \eta_k yx_j$
+                \end{itemize}
+             \end{itemize}
+    \end{itemize}
+\end{itemize}
+Two-layer NN (one hidden layer) example
+\begin{itemize}
+    \item $z_j^{(2)} = w_{0j}^{(1)} + \sum_{i=1}^d x_i w_{ij}^{(1)}$
+    \item $h_j^{(2)} = max\{0, z_j^{(2)}\} \rightarrow z^{(3)} = w_0 ^{(2)} + \sum_{j=1}^M h_j ^{(2)} w_j^{(2)}$
+    \item $h(\vec x; \vec \theta) = z^{(3)}$
+    \item $z_j = w_{0j} + \sum_{i=1}^d x_i w_{ij}$
+    \item $h_j = max\{0, z_j\}$
+\end{itemize}
+Let's work out the update for each of the parameters. Strategy: start with the last layer and work backwards (backdrop?)
+\begin{itemize}
+    \item output layer
+    \begin{itemize}
+        \item $h($
+        \item \textbf{TODO TAKE NOTES LATER}
+        \item hidden layer: each unit is a linear combination of input features $x_i$ followed by activation function g, but its output $h_j$ is used as input to the output layer, so changing $w_{ij}$ will affect the loss through $z_j, h_j, z$
+    \end{itemize}
+\end{itemize}
+For backpropagation, we know gradients are shared
+\begin{itemize}
+    \item Optimize via dynamic programming: memoize partial derivatives
+    \item The derivatives are computed via autodifferentiation
+\end{itemize}
+Recall SGD: this is our optimizer\\
+Problem with neural networks: Vanishing/Exploding Gradients
+\begin{itemize}
+    \item Gradients often get smaller and smaller as the algorithm progresses down to the earlier layers, this can leave the lower layer connection weights virtually unchanged, and training never converges to a good solution
+    \item For instance, partial derivatives at ends are virtually 0
+    \item Another example, neurons can ``die" when the gradient returns 0 for negative values
+    \item Choose the ``right" (we can hyperparametize it) activation function
+    \item How to initalize parameters?
+    \begin{itemize}
+        \item Xavier/Glorot Initialization
+        \begin{itemize}
+            \item Initialize hidden layer biases to 0 and output biases to optimal value. If weights were 0 (e.g., mean target)
+            \item Initialize weights to small random values
+        \end{itemize}
+        \item Kaiming/He initialization
+        \begin{itemize}
+            \item Random choosing out of a distribution (uniform or normal) just like Xavier/Glorot initalization
+        \end{itemize}
+    \end{itemize}
+    \item How to set learning rate?
+    \begin{itemize}
+        \item Simplest recipe: keep it fixed, use the same for all parameters
+        \item Better results can generally be obtained by allowing learning rates to decrease (learning rate schedule). t is the number of iterations
+        \item Exponential Scheduling
+        \begin{itemize}
+            \item $\eta(t) = \eta_0 10^{-t/r}$
+        \end{itemize}
+        \item Power Scheduling
+        \begin{itemize}
+            \item $\eta(t) = \eta_0 (1 + t/r)^{-c}$
+        \end{itemize}
+        \item r and c are hyperparameters
+    \end{itemize}
+\end{itemize}
+Batch Normalization
+\begin{itemize}
+    \item Zero-centers and normalizes the inputs, then scales and shifts the result just before the activation function of each layer
+    \item Benefits
+    \begin{itemize}
+        \item Vanishing gradient problem alleviated
+        \item Choice of activation function becomes less important
+        \item Less sensitive to weight intialization
+        \item Also able to use much larger learning rates (speeding up the learning process)
+    \end{itemize}
+\end{itemize}
+Reduce Overfitting
+\begin{itemize}
+    \item Early stopping: pause training when performance on the validation data starts to get worse
+    \item L1 \& L2 regularization: same as before, applied to all weights
+    \item Data Augmentation
+    \item Dropout: dropping out nodes/layers
+    \begin{itemize}
+        \item Randomly turn off hidden units with probability p. When the unit is turned off, its weights are not updated
+    \end{itemize}
+\end{itemize}
+Tips: Objects vs functions
+\begin{itemize}
+    \item Layers with parameters should be created in init (constructor)
+    \item Operations without parameters, can call lower case function (e.g. torch.relu(z)) or store it as an attribute
+    \item Loss function
+    \begin{itemize}
+        \item Assign to variable called criterion
+        \item crieterion = torch.nn.MSELOss()
+        \item loss = criterion(y\_pred, y\_true)
+    \end{itemize}
+    \item Regression
+    \begin{itemize}
+        \item No activation function + torch.nn.MSELoss
+    \end{itemize}
+    \item Binary classification, $y\in \{0,1\}$, 1 output, sigmoid activation
+    \begin{itemize}
+        \item No activation + torch.BCEWithLogitsLoss (preferred)
+        \item torch.sigmoid + torch.BCELoss
+    \end{itemize}
+    \item Multi-class, $y\in \{0,1,...,C-1\},$ C outputs, softmax activation
+    \begin{itemize}
+        \item No activation + torch.nn.CrossEntropyLoss (preferred)
+        \item torch.log\_softmax + torch.nn.NLLLoss, label is $\{0,1,...C-1\}$
+        \item When predicting for new examples (such as during validation), use torch.softmax which gives a probability distribution e.g. [0.3, 0.5, 0.2]
+    \end{itemize}
+\end{itemize}
+Choice of architecture
+\begin{itemize}
+    \item Number of hidden layers:
+    \begin{itemize}
+        \item Universal Approximation Theorem
+        \begin{itemize}
+            \item NN with one hidden layer can model complex functions provided it has enough neurons (i.e., is wide)
+        \end{itemize}
+        \item Deeper nets can converge faster to a good solution
+        \item Takeaway: start with 1-2 hidden layers and ramp up until you start to overfit
+    \end{itemize}
+    \item Number of Neurons per Hidden Layer (``shape" of each layer):
+    \begin{itemize}
+        \item First layer's input \& last layer's output determined by task at hand
+        \item Common practice: same size for all hidden layers (one tuning parameter)
+        \item Takeaway: increase number of neurons until you start to overfit
+    \end{itemize}
+\end{itemize}
+MNIST (and Convolutional Neural Networks)
+\begin{itemize}
+    \item We could consider a ``flat" representation of the image:\[\vec x = [x_1, x_2, ..., x_{1024}]\]
+    \item Problem:
+    \begin{itemize}
+        \item ignores spatial structure
+        \item susceptible to ``translational" error (i.e. moving slightly left, right, up, down. Entire feature vector changes)
+    \end{itemize}
+    \item Goal: preserve the spatial structure of the task by capturing relationships among neighboring pixels
+    \item IDEAS: * learn feature representations based on \textbf{small patches}
+    \item Apply patch-based feature representations \textbf{across the entire image}
+    \item Building Blocks of Convolutional Neural Networks (CNNs)
+    \begin{itemize}
+        \item convolutional layers
+        \item activation layers
+        \item pooling layers
+        \item fully-connected layers
+    \end{itemize}
+    \item convolutional layers
+    \begin{itemize}
+        \item a filter is a convolution that maps a $3\times 3$ patch to a scalar, outputs to a ``neuron"
+        \[\vec w \cdot \vec x + b\]
+        \item $\vec w, b$: filter parameters
+        \item $\vec x$: image patch
+        \item ``convolution" operation
+        \begin{itemize}
+            \item Slide this filter across entire image
+            \item compute the dot product on different patches of image
+            \item Computes a feature map
+            \item Oftentimes it is beneficial to preserve the original image size. This can be achieved using padding: allow filter to overlap with boundary.
+            \begin{itemize}
+                \item zero padding, copy-paste nearest
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+    \item Activation Layers
+    \begin{itemize}
+        \item $\text{input} \rightarrow \text{convolutional layer} \Rightarrow \text{``feature map"} \rightarrow \text{elementwise activation function e.g. reLU} \Rightarrow \text{``activation map"}$
+        \item Each filter produces a feature and activation map
+        \item Multiple filters $\Rightarrow$ multiple feature maps and activation maps. ``channels" (like RGB filters)
+        \item 3 filters $\rightarrow$ 3 activation maps $3\times 30\times 30$ ``image" $\underset{\text{6 filters $3\times 3\times 3$, stride = 1}}{\rightarrow} 6\times 28\times 28$ ``image" 
+    \end{itemize}
+    \item Pooling layers
+    \begin{itemize}
+        \item downsamples previous layers activation map
+        \item consolidate features learned at previous stage
+        \item Why?
+        \begin{itemize}
+            \item Compress/smooth, spatial invariance $\rightarrow$ helps to reduce overfitting
+            \item pooling often uses simple functions: max, average
+            \item pooling operates over each activation map independently
+            \item Ex: $28\times 28 \times 6$ activation amp, with $2\times 2 $ max pooling, stride = 2, $\rightarrow 14\times 14 \times 6$ activation map
+            \item Fully connected layers
+            \begin{itemize}
+                \item Flatten output from previous layer
+                \item normal ``dense" fully connected layer
+                \item $14\times 14\times 6 \overset{flatten}{\rightarrow} $ d = 1176 layer, which is then sent through a series of convolutions to get our output
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+    \item Architecture details
+    \begin{itemize}
+        \item input to a convolutional layer $C_{in} \times H \times W$
+        \begin{itemize}
+            \item $C_{in}$: \# input channels
+            \item H: height
+            \item W: width
+        \end{itemize}
+        \item $C_{out}$ filters of size $h\times w$, where $h< H, w < W$
+        \item output $C_{out}\times H^\prime \times w^\prime$ ``new image" where $H^\prime, w^\prime$ depends on filter size, padding, stride
+    \end{itemize}
+\end{itemize}
+Parameter sharing is efficient
+\begin{itemize}
+    \item Suppose input image $100\times 100 \rightarrow 10000$ input pixels
+    \item fully-connected layer with 100 neurons (no bias)
+    \begin{itemize}
+        \item $10000\times 100 = 1000000$ parameters
+    \end{itemize}
+    \item convolutional layer with $100$ filters of size $3\times 3$ (no bias)
+    \begin{itemize}
+        \item $3\times 3 \times 100 = 900$ parameters
+    \end{itemize}
+\end{itemize}
+Recall
+\begin{itemize}
+    \item 4 components of CNN
+    \begin{itemize}
+        \item Convolution layers (with activation layers)
+        \item Filter
+        \item Pooling: downsamples image
+        \item Flatten feature map to form fully connected layers
+        \item Fully connected layers
+    \end{itemize}
+    \item We have multiple convolutional layers to detect a hierarchy of features
+    \begin{itemize}
+        \item 1st stage: edges, 2nd stage: object parts, 3rd stage: objects
+    \end{itemize}
+    \item In-Class Exercise \#9
+    \begin{itemize}
+        \item First layer = 3x3x3 (since input is 3 channels), so 27+1 parameters per filter, the output is 100 feature maps, 100 filters = 2800 paramteters
+        \item Second layer: filters are 3x3x100 + 1 means 901 param/filter x 200 filters = 180200
+        \item Third layer: filters are 3x3x200 this means 1801 param/filter x400 filters = 720400
+        \item Total: 903400
+        \item This is much more efficient than hidden layers due to parameter sharing
+        \item Shape after the third conv. layer: 400x25x37 (typically rounded down)
+        \begin{itemize}
+            \item Idk how we got here
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Other models}
+
+Recurrent Neural Networks (not on final exam, but HW6 extra credit)
+\begin{itemize}
+    \item RNNs have a self-loop, which can have a vanishing gradient problem
+    \item LSTMs help capture the long-term dependencies
+\end{itemize}
+LSTMS
+\begin{itemize}
+    \item Better version of RNNs basically
+\end{itemize}
+Transformers
+\begin{itemize}
+    \item Self-attention: normalized softmax
+\end{itemize}
+Deep Learning is heavy on CNNs,RNNs, Transformers\\
+Dciding architectures
+\begin{itemize}
+    \item Flat feature vectors
+    \begin{itemize}
+        \item Feed forward neural nets, aka multi-layer perceptron (MLP)
+    \end{itemize}
+    \item Images
+    \begin{itemize}
+        \item CNNs, Transformers
+    \end{itemize}
+    \item Time Series
+    \begin{itemize}
+        \item RNNs, LSTMs
+    \end{itemize}
+\end{itemize}
+Libraries
+\begin{itemize}
+    \item PyTorch
+    \item Tensorflow
+    \item Jax
+    \item Keras: high-level API
+\end{itemize}
+
+\section{Responsible ML}
+Bias and Fairness in ML
+\begin{itemize}
+    \item Sometimes accuracy is heavily imperative. An example is medical diagnosis
+    \item Shortcuts can arise when training dataset is ``biased"
+    \begin{itemize}
+        \item Extracting conclusions based on smth we don't want it to be dependent on (e.g. pacemaker for heart failure from an XRay)
+        \item Shortcuts are an issue since they can hurt generalizing in the way we want
+    \end{itemize}
+    \item Bias in AI tools
+    \begin{itemize}
+        \item For example, racial bias
+        \item Garbage in, garbage out: the data being biased screws up the model bias
+    \end{itemize}
+    \item Bias in language models
+    \begin{itemize}
+        \item Can be present in pronouns
+    \end{itemize}
+    \item Statistical Bias: a statistical estimator is said to be biased if its expected or average value differs from the true value
+    \item What gives rise to bias in ML systems?
+    \begin{itemize}
+        \item Skewed sample (datashift shift)
+        \item Disparities in data quality
+        \item Disparities in data quantity: imbalanced dataset
+        \item Poor proxy labels
+    \end{itemize}
+\end{itemize}
+Fairness criteria (non-discrimination criteria)
+\begin{itemize}
+    \item Problem setup:
+    \begin{itemize}
+        \item $\vec x^{(1)} \in X - \R^d$ input feature vector
+        \item $y^{(i)} \in y = \{0,1\}$ label/target variable. (binary classification)
+        \item $f: X\rightarrow y$ classifier learned
+        \item $\hat y^{(i)} = f(\vec x^{(i)})$ prediction/score $\in [0,1], \in \{0,1\}$
+        \item At population level, samples ($\vec x^{(i)}, y^{(i)}$) are drawn from some underlying distribution. We can view features, label, and prediction as random variables.
+        \[\vec x, y \sim (X,Y)\]
+        \[\hat y = f(x)\]
+        \item $a \sim A$ (sensitive/protected attribute, usually categorical, e.g. male vs. female, race\& ethnicity categories, ``group membership"
+    \end{itemize}
+    \item When is f ``fair"?
+    \begin{itemize}
+        \item 30+ definitions but most fall under one of the following three categories defined along the lines of different (conditional) independence criteria
+        \begin{itemize}
+            \item Independence
+            \item Separation
+            \item Sufficiency
+        \end{itemize}
+    \end{itemize}
+    \item \textbf{Independence ``demographic parity"}
+    \begin{itemize}
+        \item Def: random variable (A, $\hat y$) satisfy independence if $A \bot \hat y$
+        \item In the case of binary classification:\[P(\hat Y = 1| A=a) = P(\hat Y = 1 | A = b), \forall\text{ groups }a,b\]
+        \item requiring the sensitive attribute to be statistically independent of the score. i.e. predicted probabilities are equal across groups
+        \begin{itemize}
+            \item Predict if we should interview candidate, A: \{male, female\}\\prob. of interview should be same for male and female applicants. Equal ``acceptance rate", ``positivity rate"
+            \item Various relaxations of the equality constraint, e.g. \[P(\hat y = 1 | A =a) \geq P(\hat y = 1| A=b) - \epsilon ,\forall a,b | \epsilon > 0\] (note: can swap a \& b to get inequality in the other direction)
+            \item Limitations:
+            \begin{itemize}
+                \item Can be be trivially achieved by randomly assigning labels for group b at the same rate of diligently learned classifier for group a. Though acceptance rates are similar, those accepted in group b will be less qualified (could be due to limited data). 
+                \item If target variable is correlated with sensitive attribute in a meaningful way e.g. y: risk of developing prostate cancer\\A: a: male, b: female. In this case, it would be ridiculous to imply female patients have the same rate of prostate cancer
+            \end{itemize}
+        \end{itemize}
+        \item \textbf{Separation ``equalized odds"}
+        \begin{itemize}
+            \item Def: R.V. ($\hat y, A, \hat y$) satisfies $\hat Y \bot A|y$
+            \item In the case of binary classification:\[P(\hat y = 1 | Y= 1, A=a) = P(\hat y = 1| y = 1, A=b), \text{ True Positive Rate}\] and \[P(\hat y = 1| Y=0, A=a) = P(\hat y = 1|y=0, A=b) \text{ False Positive Rate}\]$\forall$ groups a,b
+            \item Goal: equalize TPR and FPR at same rates across groups a,b
+            \item Require all groups to experience same TPR and same FPR
+            \item ensure accuracy of model doesn't depend on A, bu we are conditioning between $\hat y$ and A to the extend it is justfied
+            \item Same TPR + Same FPR, leads to same False Negative Rate
+            \item various relaxations\\e.g. $P(\hat y = 0 |y=1, A=a) = P(\hat y = 0 |Y=1, A=b)$ (only look at False Negative Rate). ``denied opportunity" is equal
+            \item if $\hat y$ is the classifier's continuous output (e.g. probability), we can visualize separation via group-specific ROC curves
+        \end{itemize}
+        \item \textbf{Sufficiency (related to ``predictive parity"}
+        \begin{itemize}
+            \item \[(\hat y, A, y) \text{ satisfy } y\bot A|\hat y\]in the case of binary classification:\[P(Y=1| \hat Y = 1, A=a) = P(Y=1|\hat Y=1, A=b) \text{ (Positive Prediction Value, PPV)}\] and 
+            \[P(Y=0| \hat Y = 0, A=a) = P(Y=0|\hat Y=0, A=b) \text{ (Negative Predictive Value)}\]$\forall$ groups a,b
+            \begin{itemize}
+                \item requires all groups have same PPV and same NPV
+                \item If $\hat y$ is the classifier's probability output, we can visualize sufficiency via group-specific calibration curves. If the curves overlap, our condition is satisfied
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+The ``Impossibility Theorem" of fairness
+\begin{itemize}
+    \item In general, it is impossible to simultaneously satisfy \underline{more than one} of the three of the three fairness criteria (independence, separation, sufficiency)
+\end{itemize}
+\begin{center}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Independence & Separation & Sufficiency \\
+        \hline
+        $\hat Y \bot A$ &$\hat Y \bot A | Y$ &$Y\bot A|\hat Y$\\
+        \hline
+    \end{tabular}
+\end{center}
+Ethical Challenges with ML
+\begin{itemize}
+    \item GDPR
+    \item Other stuff
+\end{itemize}
+
+\section{Unsupervised Learning}
+Before, we've only talked about supervised learning. We will now look at unsupervised learning (meaning data is unlabeled)
+\vspace{0.15in}\\
+Reinforcement Learning
+\begin{itemize}
+    \item Agent-oriented: You are the agent. You want to learn how to behave in the environment in order to achieve some goal
+    \item Learn through trial and error: just like natural learning
+    \item RL Interface: sequential decision-making
+    \begin{itemize}
+        \item Agent observes state
+        \item Agent executes action
+        \item Agent receives reward
+        \item Transition to next state
+    \end{itemize}
+    \item Markov Decision Process (MDP)
+    \begin{itemize}
+        \item S: set of states
+        \item A: set of actions
+        \item R: reward function $p(r_t | s_t, a_t)$
+        \item P: transition function $p(s_{t+1}|s_t, a_t)$
+    \end{itemize}
+    \item MDP for chess (example)
+    \begin{itemize}
+        \item set of possible board configs.
+        \item set of legal moves
+        \item whether of not you won
+        \item applying the move to the current board
+    \end{itemize}
+    \item We learn a policy: mapping from states to actions $\pi: S\rightarrow A$
+    \item Goal: Learn policy that maximizes reward
+    \item Key Differences between Supervised and RL
+    \begin{itemize}
+        \item Supervised Learning
+        \begin{itemize}
+            \item Learner passively receives a dataset containing labeled examples
+            \item Data distribution is fixed
+        \end{itemize}
+        \item Reinforcement Learning
+        \begin{itemize}
+            \item Learner actively collects data by interacting with the environment
+            \item Data distribution depends on how the learner acts in the environment
+        \end{itemize}
+    \end{itemize}
+    \item Example: Multi-armed bandit
+    \begin{itemize}
+        \item Setup:
+        \begin{itemize}
+            \item S: single state
+            \item A: arms $a=1,a=2,..., a=k$
+            \item R: $P(r|a)$ for $a\in A$, probabilsitc mapping from action to reward
+        \end{itemize}
+        \item Task: Agent sequentially choose which armt o pull next for step t = 1,2,...,T: choose arm to pull, $a_t \in A$, observe the reward $r_t \sim P(r|a_t)$
+        \item Goal: decide sequence of actions to maximize cumulative rewards: $\sum_{t=1}^T r_t$
+        \item \underline{\textbf{Assumption:}} reward depends only on the action taken; it is i.i.d. with expectation $\mu(a)$ for $a=1\cdots k$ (independent, identically distributed)
+        \item Choose the action that gives the greatest reward
+        \item \textbf{Action-Value methods:} learn $Q(a) \approx \mu (a), \forall a\in A$
+        \begin{itemize}
+            \item Suppose we have the following trajectory, $a_1, r_1, a_2 ,r_2, a_3, r_3, ..., a_{t-1}, r_{t-1}$. What should we take for the next action $a_t$?
+            \item Estimate $\mu(a)$ for $a\in A$ as sample average
+            \[Q_t(a) = \frac{\text{sum of rewards when action $a$ taken prior to t}}{\text{number of times $a$ taken prior to t}} = \frac{\sum_{i=1}^{t-1} r_i \mathbb{I}(a_i = a)}{\sum_{i=1}^{t-1} \mathbb{I}(a_i = a)}\]
+            \begin{itemize}
+                \item Basically the average reward
+            \end{itemize}
+            \item Sample average converges to the value in the limit of infinite samples: $\underset{N_t (a )\rightarrow \infty}{\lim} Q_t (a) = \mu(a)$
+            \item Given $Q_t(a)$ for all $a\in A$, the greedy action $a_t^* = \underset{a}{argmax} Q_t(a)$ (break ties randomly) \\for next action $a_t$:
+            \begin{itemize}
+                \item if $a_t = a_t^*$, we are exploiting. we kind of know what action is good
+                \item if $a_t \neq a_t^*$, we are exploring, we're trying to get more info to improve our estimates
+            \end{itemize}
+            \item We can only pick one $a_t$, so we can't do both
+            \item But we have to do both
+            \item \textbf{Problems:}
+            \begin{itemize}
+                \item Is 100 times enough? $Q(a) \rightarrow \mu(a)$ in $\lim \infty$
+                \item Is 100 times too much? If reward is negative, clearly bad
+            \end{itemize}
+            \item Second attempt.\\$\epsilon-$greedy action selection: balance exploration and exploitation
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+\subsection{$\epsilon-$greedy action selection: An RL model to Balance Exploration and Exploitation}
+\begin{itemize}
+    \item Initialize $\begin{cases}
+        Q(a) = 0\\N(a) = 0
+    \end{cases}$ for $a=1\cdots k$
+    \item N: number times action has been taken
+    \item Q: sample average estimate
+    \item For $t=1,2,3,...$
+    \[a_t = \begin{cases}
+        \underset{a}{argmax} Q(a)\text{ with prob } 1-\epsilon\\
+        \text{random action, with prob }\epsilon
+    \end{cases}\]
+    take $a_t$, receive the reward
+    \item update:\[\begin{cases}
+        N(a_t) = N(a_t) + 1\\
+        Q(a_t) = Q(a_t) + \frac{1}{N(a_t)}[r_t-Q(a_t)]
+    \end{cases}\]
+    \item incremental implementation of sample average.
+    \item $\epsilon \in [0,1]$ controls the ``exploration rate"
+    \item larger $\epsilon$ exploring more: learn faster initially, but converges to suboptimal
+    \item smaller $\epsilon$ explores less (non-zero prob): learn slower, converges to better near-optimal solution
+    \item $\epsilon$-greedy explores \textbf{forever} with constant exploration rate
+    \item Should we explore forever?
+    \begin{itemize}
+        \item Yes. but perhaps you should explore less as t increases
+        \begin{itemize}
+            \item key idea: optimism in the face of uncertainty
+            \item the more uncertain we are about an action, the more important it is to explore it
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Upper Confidence Bound}
+UCB Score: \[Q_t(a) + c\sqrt{\frac{\ln(t)}{N_t(a)}}, c>0\]
+\begin{itemize}
+    \item As $N_t(a)$ increases, more data, less uncertain. exploration onus decreases
+    \item As t increase, if $N_t(a)$ doesn't increase ``proportionately", exploration bonus increases
+\end{itemize}
+
+\textbf{Take notes on everything later (Upper Confidence Bound)}
+
+\subsection{Clustering (Recommender Systems)}
+\begin{itemize}
+    \item Ex: Netflix
+    \item \textbf{Collaborative Filtering - } recommender problems that can be reduced to \textbf{matrix completion}. Today, we'll look at two ways to solve the problem
+    \item Matrix completion
+    \begin{itemize}
+        \item $n\times m$ matrix, n users, m movies
+        \item Use $Y_{ai} \in \R$
+        \item a: user index
+        \item i: movie index
+    \end{itemize}
+\end{itemize}
+\subsubsection{Method 1: Nearest Neighbors Prediction}
+\begin{itemize}
+    \item $kNN(a,i):$ k ``nearest neighbors", the k most similar users to a, who have also rated movie i
+    \item $\hat Y_{ai} = \frac{1}{|kNN(a,i)|} \underset{b\in kNN(a,b)}{\sum} Y_{bi}$ (average the ratings for movie i for users similar to user a)
+    \item \textbf{TODO: complete}
+    \item Pearson correlation: similarity metric
+    \item $\hat Y_{ai} = \bar Y_{ai} + \frac{1}{|kNN(a,i)|} \underset{b\in kNN(a,b)}{\sum} sim(a,b) (Y_{bi} - Y\bar Y_{bi})$
+    \item Pros: interpretable
+    \item Cons: slow (at least quadratic)
+\end{itemize}
+\subsubsection{Method 2: Matrix Factorization}
+\begin{itemize}
+    \item $Y: n\times m$, Y is ratings, n is users, m is items
+    \item Let $Y$ be an $n\times m$ matrix, with $Y_{ai}$ representing ath row, ith column
+    \item missing entries: not all $Y_{ai}$ is observed $\Rightarrow$ matrix completion problem
+    \begin{itemize}
+        \item fill out missing entries
+        \item predict the unknown ratings
+    \end{itemize}
+    \item Let $\hat Y$ represent our approximation
+    \item Naive first attempt (\textbf{DOES NOT WORK}) to formulate a regression problem
+    \[J(\hat Y) = \frac{1}{2} \underset{(a,i)\in D}{\sum} (Y_{ai}- \hat Y_{ai})^2 + \frac{\lambda}{2}  \underset{(a,i)\in D}{\sum} \hat Y_{ai}^2\]
+    \begin{itemize}
+        \item Like L2 Ridge regression
+        \item Find $\hat Y$ that minimizes $J(\hat Y)$
+        \item Start with partial deriv.
+        \[\frac{\partial J}{\partial \hat Y_{ai}} \mathbb{I}((a,i) \in D) (Y_{ai} - \hat Y_{ai}) + \lambda \hat Y_{ai}\]
+        \begin{itemize}
+            \item Indicator functions ($\mathbb{I}$) output...
+            \item for $(a,i) \in D$ observed entries (denominator shrinks)
+            \[\hat Y_{ai} = \frac{Y_{ai}}{1 + \lambda}\]
+            \item for $(a,i) \notin D$, unobserved (predict 0, not useful)
+            \[\hat Y_{ai} = 0\]
+        \end{itemize}
+        \item Problem: we can set each entry independent. Without a constraint, we can set each entry \textbf{independently} (we do NOT want this) to anything we want
+        \item Idea: impose a \textbf{constraint} (on the rank of $\hat Y$, low-rank approximation via factorization) s.t. row/col are \textbf{linearly dependent}
+    \end{itemize}
+    \[\underset{n\times m}{Y} \overset{approx}{\rightarrow} \hat Y = UV^T \Rightarrow n\times m\]
+    \begin{itemize}
+        \item where $U$ is $n\times d$
+        \item $V$ is $m\times d$
+        \item $d < min(n,m) \Rightarrow \hat Y$ is not full rank
+        \item entries are not independent
+    \end{itemize}
+    \item Matrix Factorization Notation
+    \begin{itemize}
+        \item let $\vec u^{(a)} \in \R^d$ be a-th row of $\underset{n\times d}{U}$
+        \item Take out ath row of U, turning it into a column vector $\vec u^{(a)}$, which is $d\times 1$
+        \begin{itemize}
+            \item More formally: $U = [\vec u^{(1)}, \vec u^{(2)}, \cdots, \vec u^{(n)}]^T$
+        \end{itemize}
+        \item Let $\vec v^{(i)} \in \R^d$ be the i-th row of V
+        \item $V^T = d\times m$ matrix, $\vec v^(i)$ is $d\times 1$
+        \begin{itemize}
+            \item $V = [\vec v^{(1)}, \vec v^{(2)}, \cdots, \vec v^{(m)}]^T$
+        \end{itemize}
+        \item $[UV^T]_{ai} = \vec u^{(a)} \cdot \vec v^{(i)}$
+        \item $\hat Y_{ai} = \vec u^{(a)} \cdot \vec v^{(i)}$
+    \end{itemize}
+    \item Second Attempt
+    \[J(u,v) = \frac{1}{2}\underset{(a,i)\in D}{\sum} (Y_{ai} - [UV^T]_{ai})^2 + \frac{\lambda}{2} \overset{n}{\underset{a=1}{\sum}}\overset{d}{\underset{k=1}{\sum}} U_{ak}^2 + \frac{\lambda}{2} \overset{n}{\underset{a=1}{\sum}}\overset{d}{\underset{k=1}{\sum}} V_{ik}^2  \]
+    \[\underset{u,v}{min} \frac{1}{2} \underset{(a,i)\in D}{\sum} (Y_{ai} - \vec u^{(a)} \cdot \vec v^{(i)})^2 + \frac{\lambda}{2} \sum_{a=1}^n ||\vec u^{(k)} ||^2 + \frac{\lambda}{2} \sum_{i=1}^m ||\vec v^{(i)}||^2\]
+    \begin{itemize}
+        \item If d = min(n,m), then $\hat Y$ is full rank. This reduces to the trivial solution since each element can be chosen independently
+        \item The smaller we set d, the more constrained the problem becomes, both d and $\lambda$ are hyperparameters
+        \item How do we solve this? symmetry
+        \begin{itemize}
+            \item If we know U, then we can solve for V
+            \item if we know V, then we can solve for U
+            
+        \end{itemize}
+        \item Steps:
+            \begin{itemize}
+                \item Initialize movie feature vectors. Randomly small values: $\vec v^{(1)}, \cdots, \vec v^{(m)}$\\Iterate until \underline{convergence}
+                \item Fix v vectors, solve for u vectors
+                \item What is $\vec u^{(a)}$?
+                \item $\underset{\vec u^{(a)}}{min} \frac{1}{2} \underset{i \in D_a}{\sum} (Y_{ai} - \vec u^{(a)} \cdot \vec v^{(i)})^2 + \frac{\lambda}{2} \sum_{a=1}^n ||\vec u^{(a)} ||^2$
+                \begin{itemize}
+                    \item This looks analogous to L2 ridge regression
+                    \item $\vec u^{(a)}$ is analogous to $\vec \theta$
+                    \item $\vec v^{(i)}$ is analogous to $\vec x$
+                \end{itemize}
+            \end{itemize}
+            \item Fix $\vec u^{(1)} \cdots \vec u^{(n)}$ solve for $\vec v^{(1)} \cdots \vec v^{(m)}$
+            \[\underset{\vec v^{(i)}}{min} \frac{1}{2}\sum_{a\in D_i} (Y_{ai} - \vec u^{(a)} \cdot \vec v^{(i)})^2 + \frac{\lambda}{2} ||\vec v^{(1)}||^2\]
+        \end{itemize}
+\end{itemize}
+Worked Example
+\begin{itemize}
+    \item Evaluate the squared error associated with $\hat Y_{11}$
+    \[(Y_{11} - u^{(1)} \cdot v^{(1)})^2 = (5-6\times 4)^2 = 19^2\]
+    \begin{itemize}
+        \item Note the notation that we are simply taking the dot product of two elements, not the entire vectors
+    \end{itemize} 
+    \item Suppose now we fix V. Find the new $u^{(1)}$
+    \[\underset{u^{(1)}}{min} \frac{1}{2}\sum_{i\in D_1} (Y_{1i} - u^{(1)}\cdot v^{(i)})^2 + \frac{1}{2}(u^{(1)} )^2\]
+    \[J(u^{(1)}) = \frac{1}{2} (5-4u^{(1)})^2 + \frac{1}{2} (7-5u^{(1)})^2 + \frac{1}{2}(u^{(2)})^2\]
+    \begin{itemize}
+        \item Take partial derivative (set equal to 0), then solve for $u^{(1)}$
+        \item In this case: new $u^{(1)} = \frac{55}{42}$
+    \end{itemize}
+    \item What is the error associated with the new prediction for $\hat Y_{11}$?
+    \[\hat Y_{11} = u^{(1)} \cdot v^{(1)} = \frac{55}{42}\times 4 \approx 5.24\]
+    \[Y_{11} - \hat Y_{11})^2 = 5- 5.24)^2 \approx 0.057 \text{ (better)}\]
+\end{itemize}
+
+After today we should be able to do first 3 questions (on hw)
+
+\subsection{Clustering (gen.)}
+Two types of clustering
+\begin{itemize}
+    \item Partitional (groups)
+    \item Hierarchical (hierarchy tree, can cut at any level to get partitions)
+\end{itemize}
+Basic idea: group similar points
+\begin{itemize}
+    \item Intuitively:
+    \begin{itemize}
+        \item intra-cluster distances $\rightarrow$ small
+        \item inter-cluster distances $\rightarrow$ large
+    \end{itemize}
+\end{itemize}
+Goal: given a set of examples $D=\{\vec x^{(i)}\}_{i=1}^N$
+\begin{itemize}
+    \item assigns imilar points to teh same clusters
+    \item assign dissimilar pts to diff clusters
+\end{itemize}
+Defining similarity
+\begin{itemize}
+    \item (dis)similarity measured by L2/Euclidean distance: $||\vec x^{(i)} - \vec x^{(j)}||^2 =\sum_{k=1}^d \left(x_k^{(i)} - x_k^{(j)}\right)^2$
+    \item C: ``cluster", a set of points (indices)
+    \item $\vec z \in \R^d$: representative example (cluster centroid)
+\end{itemize}
+Given clusters, find centroids
+\begin{itemize}
+    \item $\vec z^{(j)} = \frac{1}{|c_j|} \sum_{i\in c_j} \vec x^{(i)}$
+    \item $c_j = \{i=1\cdots N$ such that the closest representative to $\vec x^{(i)}$ is $\vec z^{(i)}\}$
+\end{itemize}
+``Voronoi" diagram
+\begin{itemize}
+    \item $\R^d$ partitioned into k convex cells
+    \item Objective:
+    \[\underset{\vec z^{(1)} \cdots \vec z^{(k)}}{\underset{c_1\cdots c_k}{min}} \sum_{j=1}^k \sum_{i\in c_j} ||\vec x^{(i)} - \vec z^{(j)}||^2\]
+    \begin{itemize}
+        \item Sum over clusters on outer loop, sum over points in each cluster in inner loop
+    \end{itemize}
+    \item Insights: if we know $c_1 \cdots c_k$, we can find $\vec z^{(1)} \cdots \vec z^{(k)}$\\if we know $\vec z^{(1)} \cdots \vec z^{(k)}$ we can find $c_1 \cdots c_k$\\$\Rightarrow$ we know neither
+    \begin{itemize}
+        \item alternating minimization (introducing K-means)
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{K-means algorihm}
+\begin{itemize}
+    \item Initialize centroids $\vec z^{(1)} \cdots \vec z^{(k)}$
+    \begin{itemize}
+        \item Why initialize centroids instead of clusters? Easier to randomly initialize k centroids vs k clusters
+    \end{itemize}
+    \item Repeat below 2 steps until convergence (each iteration requires O(kN) operations)
+    \begin{itemize}
+        \item for each $j=1\cdots k, c_j=\{$i s.t. $\vec z^{(j)}$ is closest to $\vec x^{(i)}\}$
+        \item for each $j=1\cdots k, \vec z^{(j)} = \frac{1}{|c_j|} \sum_{i\in c_j} \vec x^{(i)}$
+    \end{itemize}
+    \item Convergence
+    \begin{itemize}
+        \item Clusters/centroids stop changing
+        \begin{itemize}
+            \item If ties are not broken consistently, it may cycle $\Rightarrow$ if it cycles, that indicates convergence
+            \item k-means is guaranteed to converge to local minimum
+            \item If we improperly initialize centroids we can face issues (bad clusters)
+        \end{itemize}
+    \end{itemize}
+    \item Initialization
+    \begin{itemize}
+        \item randomly picking points
+        \item k-mean++: account for distribution $\R^d$.\\tries to ``spread it out" more
+    \end{itemize}
+    \item Choosing k
+    \begin{itemize}
+        \item Sometimes k is given (i.e. we know we have exactly k clusters)
+        \item If k is not given, we can use a heuristic, for example: the ``elbow" method
+        \begin{itemize}
+            \item Plot cost (y-axis, sum of distances from points to centroids) against k (x-axis)
+            \[``cost" = \sum_{j=1}^k \sum_{i\in c_j} ||\vec x^{(i)} - \vec z^{(j)}||^2\]
+            \item At $k=N$ we have cost of 0 (1 cluster per point). Find the ``elbow"/`kink' where decrease in cost becomes significantly less
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+
+% other
 \input{terminology}
 
 \end{document}
